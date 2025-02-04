@@ -8,10 +8,17 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+// Route::post('/login', function () {
+//     return ['dungtq test post hihi' => app()->version()];
+// });
 Route::post('/register', [RegisteredUserController::class, 'store'])
                 ->middleware('guest')
                 ->name('register');
 
+     
+// Route::post('/login', function () {
+//     return ['dungtq test post hihi' => app()->version()];
+// });           
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
                 ->middleware('guest')
                 ->name('login');
