@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_model
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    ports:
+      - "9800:9000"
