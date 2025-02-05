@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,8 +15,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return ['dungtq test ' => app()->version()];
+Route::get('/login', function () {
+    return ['dungtq testhihi ' => app()->version()];
 });
 
 require __DIR__.'/auth.php';
