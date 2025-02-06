@@ -19,17 +19,21 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::post('/login', function () {
-    return ['dungtq test post hihi' => app()->version()];
-});           
+// Route::post('/login', function () {
+//     return ['dungtq test post hihi' => app()->version()];
+// });
 
 Route::post('/register', [RegisteredUserController::class, 'store'])
     ->middleware('guest')
     ->name('api.register');
-    
+
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
     ->middleware('guest')
     ->name('api.login');
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth:sanctum'); // ✅ Dùng Sanctum nếu API dùng token
+
 
 // Route::get('/access', [AuthenticatedSessionController::class, 'firstAccess']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

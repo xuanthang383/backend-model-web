@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -45,34 +46,43 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    /**
-     * Logout API (Hủy token).
-     */
     public function destroy(Request $request)
     {
-        // 6️⃣ Hủy token hiện tại
-        $request->user()->tokens()->delete();
+        Log::info("Destroy function called");
 
-        return response()->json(['message' => 'Logged out successfully.']);
+        if ($request->header('Authorization')) {
+            Log::info("Authorization Header: " . $request->header('Authorization'));
+        }
+
+        if ($request->user()) {
+            Log::info("User authenticated, deleting tokens...");
+            $request->user()->tokens()->delete();
+        } else {
+            Log::info("User not authenticated, possible invalid token.");
+        }
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
-    // public function firstAccess(Request $request)
-    // {
-    //     // Kiểm tra xem user có đang đăng nhập không
-    //     if (Auth::check()) {
-    //         return response()->json([
-    //             'message' => 'User already authenticated',
-    //             'user' => Auth::user(),
-    //         ]);
-    //     }
 
-    //     // Nếu chưa đăng nhập, có thể trả về thông tin hệ thống hoặc tạo guest token
-    //     return response()->json([
-    //         'message' => 'Welcome to our API',
-    //         'system' => [
-    //             'app_name' => config('app.name'),
-    //             'version' => '1.0.0',
-    //             'timezone' => config('app.timezone'),
-    //         ]
-    //     ]);
-    // }
+
+    public function firstAccess(Request $request)
+    {
+        // Kiểm tra xem user có đang đăng nhập không
+        if (Auth::check()) {
+            return response()->json([
+                'message' => 'User already authenticated',
+                'user' => Auth::user(),
+            ]);
+        }
+
+        // Nếu chưa đăng nhập, có thể trả về thông tin hệ thống hoặc tạo guest token
+        return response()->json([
+            'message' => 'Welcome to our API',
+            'system' => [
+                'app_name' => config('app.name'),
+                'version' => '1.0.0',
+                'timezone' => config('app.timezone'),
+            ]
+        ]);
+    }
 }
