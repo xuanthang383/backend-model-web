@@ -36,11 +36,13 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth:sanctum'); // ✅ Dùng Sanctum nếu API dùng token
 
-// Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+// Route::post('/forgots-password', [PasswordResetLinkController::class, 'store'])
 //     ->middleware('guest')
 //     ->name('password.email');
 
-Route::post('/upload-3d', [FileUploadController::class, 'upload3DModel']);
+Route::post('/upload-3d', [FileUploadController::class, 'postUpload']);
+// ->middleware('auth:sanctum'); // ✅ Dùng Sanctum nếu API dùng token
+
 // Route::get('/access', [AuthenticatedSessionController::class, 'firstAccess']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
