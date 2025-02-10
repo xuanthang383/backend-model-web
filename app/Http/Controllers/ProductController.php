@@ -42,27 +42,27 @@ class ProductController extends Controller
             'category_id' => $request->category,
             'description'=>'abc'
         ]);
-        dd($product);
-        // // Lưu file model vào bảng `product_files`
-        // ProductFile::create([
-        //     'product_id' => $product->id,
-        //     'file_name' => basename($request->file_url),
-        //     'file_path' => $request->file_url,
-        //     'type' => 'model' // Phân loại đây là file model
-        // ]);
 
-        // // Lưu danh sách ảnh vào bảng `product_files`
-        // $productImages = [];
-        // if (!empty($request->image_urls)) {
-        //     foreach ($request->image_urls as $imageUrl) {
-        //         $productImages[] = ProductFile::create([
-        //             'product_id' => $product->id,
-        //             'file_name' => basename($imageUrl),
-        //             'file_path' => $imageUrl,
-        //             'type' => 'image' // Phân loại đây là ảnh
-        //         ]);
-        //     }
-        // }
+        // Lưu file model vào bảng `product_files`
+        ProductFile::create([
+            'product_id' => $product->id,
+            'file_name' => basename($request->file_url),
+            'file_path' => $request->file_url,
+            'type' => 'model' // Phân loại đây là file model
+        ]);
+
+        // Lưu danh sách ảnh vào bảng `product_files`
+        $productImages = [];
+        if (!empty($request->image_urls)) {
+            foreach ($request->image_urls as $imageUrl) {
+                $productImages[] = ProductFile::create([
+                    'product_id' => $product->id,
+                    'file_name' => basename($imageUrl),
+                    'file_path' => $imageUrl,
+                    'type' => 'image' // Phân loại đây là ảnh
+                ]);
+            }
+        }
 
         return response()->json([
             'message' => 'Product created successfully',
