@@ -31,10 +31,13 @@ class AuthenticatedSessionController extends Controller
         // 3️⃣ Lấy thông tin user đã đăng nhập
         $user = Auth::user();
 
-        // 4️⃣ Tạo token API sử dụng Laravel Sanctum
+        // 4️⃣ XÓA tất cả token cũ của user trước khi tạo token mới
+        $user->tokens()->delete();
+
+        // 5️⃣ Tạo token API mới sử dụng Laravel Sanctum
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // 5️⃣ Trả về thông tin user + token
+        // 6️⃣ Trả về thông tin user + token mới
         return response()->json([
             'message' => 'Login successful',
             'token' => $token,

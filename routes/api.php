@@ -35,7 +35,7 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])
     ->name('api.login');
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->middleware('auth:sanctum'); // ✅ Dùng Sanctum nếu API dùng token
+    ->middleware('guest');
 
 // Route::post('/forgots-password', [PasswordResetLinkController::class, 'store'])
 //     ->middleware('guest')
