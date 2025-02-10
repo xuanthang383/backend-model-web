@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -40,8 +41,11 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 //     ->middleware('guest')
 //     ->name('password.email');
 
-Route::post('/upload-3d', [FileUploadController::class, 'postUpload']);
+// Route::post('/upload-3d', [FileUploadController::class, 'upload3DModel']);
 // ->middleware('auth:sanctum'); // ✅ Dùng Sanctum nếu API dùng token
+Route::post('/upload-temp-images', [FileUploadController::class, 'uploadTempImage']);
+Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
+Route::post('/products', [ProductController::class, 'store']);
 
 // Route::get('/access', [AuthenticatedSessionController::class, 'firstAccess']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

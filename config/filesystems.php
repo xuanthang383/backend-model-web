@@ -46,7 +46,6 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'), // Đảm bảo AWS_URL đúng
             'endpoint' => env('AWS_ENDPOINT'),
-            'visibility' => 'public',
         ],
         'local' => [
             'driver' => 'local',
