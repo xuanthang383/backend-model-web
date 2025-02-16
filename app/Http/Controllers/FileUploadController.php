@@ -17,7 +17,7 @@ class FileUploadController extends Controller
     private function storeTempFile($file, $folder)
     {
         $filePath = $file->store("temp/{$folder}", 'public');
-        return asset("storage/$filePath"); // Trả về đường dẫn truy cập
+        return asset($filePath); // Trả về đường dẫn truy cập
     }
 
     /**

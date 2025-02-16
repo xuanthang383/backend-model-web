@@ -16,17 +16,23 @@ class ProductController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
+            'description' => 'string',
             'category_id' => 'required|integer|exists:categories,id',
             'file_url' => ['required', 'url'],
             'image_urls' => 'nullable|array',
             'image_urls.*' => ['url']
         ]);
+        $path = parse_url($request->file_url, PHP_URL_PATH);
+
+        $relativePath = str_replace('/temp/', '', $path);
+        // dd ('file_path1'. $relativePath);
+        $relativeName = str_replace('/temp/models/', '', $path);
 
         // 🛑 Tạo Product mới
         $product = Product::create([
             'name' => $request->name,
             'category_id' => $request->category_id,
-            'description' => 'abc'
+            'description' => $request->description,
         ]);
 
         $uploadedBy = Auth::id() ?? 1;
@@ -35,13 +41,20 @@ class ProductController extends Controller
         // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
         if (!empty($request->file_url)) {
             $fileRecord = File::create([
-                'file_name' => basename($request->file_url),
-                'file_path' => $request->file_url, // Lưu đường dẫn tạm
+                'file_name' => $relativeName,
+                'file_path' => $relativePath, // Lưu đường dẫn tạm
                 'uploaded_by' => $uploadedBy
             ]);
-
+            // dd($fileRecord->id);
             // 🔥 Đẩy lên queue để upload lên S3
             dispatch(new UploadFileToS3($fileRecord->id, $request->file_url, 'models'));
+
+            ProductFiles::create(
+                [
+                    'file_id' => $fileRecord->id,
+                    'product_id' => $product->id
+                ]
+                );
 
             $filesToInsert[] = $fileRecord;
         }
@@ -49,13 +62,23 @@ class ProductController extends Controller
         // 🔥 Lặp qua danh sách `image_urls`, lưu vào DB trước rồi đẩy lên queue
         if (!empty($request->image_urls) && is_array($request->image_urls)) {
             foreach ($request->image_urls as $imageUrl) {
+                $path = parse_url($imageUrl, PHP_URL_PATH);
+
+                $relativePath = str_replace('/temp/', '', $path);
+                $relativeName = str_replace('/temp/images/', '', $path);
                 $imageRecord = File::create([
-                    'file_name' => basename($imageUrl),
-                    'file_path' => $imageUrl, // Lưu đường dẫn tạm
+                    'file_name' => $relativeName,
+                    'file_path' => $relativePath,
                     'uploaded_by' => $uploadedBy
                 ]);
 
                 dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+                ProductFiles::create(
+                    [
+                        'file_id' => $imageRecord->id,
+                        'product_id' => $product->id
+                    ]
+                    );
 
                 $filesToInsert[] = $imageRecord;
             }

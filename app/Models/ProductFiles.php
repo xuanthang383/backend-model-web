@@ -8,7 +8,7 @@ class ProductFiles extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['product_id', 'file_name', 'file_path', 'type'];
+    protected $fillable = ['product_id', 'file_id'];
 
     public function product()
     {

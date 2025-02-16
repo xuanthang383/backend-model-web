@@ -26,17 +26,23 @@ class UploadFileToS3 implements ShouldQueue
 
     public function handle()
     {
-        $localPath = str_replace(url('/storage'), 'public', parse_url($this->fileUrl, PHP_URL_PATH));
+        $fileUrl = request()->get('file_url'); 
+        $parsedUrl = parse_url(url: $fileUrl);
+        $filePath = $parsedUrl['path'];
 
-        if (Storage::disk('public')->exists($localPath)) {
-            $s3Path = "{$this->folder}/" . basename($this->fileUrl);
-            Storage::disk('s3')->put($s3Path, Storage::disk('public')->get($localPath));
-            Storage::disk('public')->delete($localPath);
+        $fileContent = Storage::disk('public')->get($filePath);
 
-            // 🛑 Cập nhật đường dẫn chính xác trên S3 trong DB
-            File::where('id', $this->fileId)->update([
-                'file_path' => Storage::disk('s3')->url($s3Path)
-            ]);
+        if (empty($fileContent)) {
+            return false;
         }
+
+        $s3Path = "{$this->folder}/" . basename(path: $this->fileUrl);
+        $uploaded = Storage::disk('s3')->put($s3Path, $fileContent);
+
+        if (!$uploaded) {
+            return false;
+        }
+    
+        return true;
     }
 }
