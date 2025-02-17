@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Render;
 use Illuminate\Http\Request;
 
-class RenderController extends Controller
+class RenderController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Render::all(), 200);
+        return $this->paginateResponse(Render::query(), $request);
     }
 
     /**
