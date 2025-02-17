@@ -10,9 +10,9 @@ class TagController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Tag::all(), 200);
+        return $this->paginateResponse(Tag::query(), $request);
     }
 
     /**

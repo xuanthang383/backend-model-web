@@ -10,22 +10,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
-class ProductController extends Controller
+class ProductController extends BaseController
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Product::with(['category', 'platform', 'render', 'material', 'colors', 'tags'])->get(), 200);
+        return $this->paginateResponse(Product::query(), $request);
     }
 
     public function show($id)
     {
-        $product = Product::with(['category', 'platform', 'render', 'material', 'colors', 'tags'])->find($id);
-        
+        $product = Product::with(['category', 'tags', 'files'])->find($id);
+
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        return response()->json($product, 200);
+        return response()->json(['data' => $product]);
     }
     public function store(Request $request)
     {

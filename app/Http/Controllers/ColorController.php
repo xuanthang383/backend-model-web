@@ -2,19 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Platform;
+use App\Models\Color;
 use Illuminate\Http\Request;
 
-class ColorController extends Controller
+class ColorController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Platform::all(), 200);
+        return $this->paginateResponse(Color::query(), $request);
     }
-
     /**
      * Store a newly created resource in storage.
      */

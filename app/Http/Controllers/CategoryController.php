@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
 
-class CategoryController extends Controller
+class CategoryController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Category::all(), 200);
+        return $this->paginateResponse(Category::query(), $request);
     }
 
     /**
