@@ -24,9 +24,9 @@ class ProductController extends Controller
         ]);
         $path = parse_url($request->file_url, PHP_URL_PATH);
 
-        $relativePath = str_replace('storage/temp/', '', $path);
+        $relativePath = str_replace('/storage/temp/', '', $path);
         // dd ('file_path1'. $relativePath);
-        $relativeName = str_replace('storage/temp/models/', '', $path);
+        $relativeName = str_replace('/storage/temp/models/', '', $path);
 
         // 🛑 Tạo Product mới
         $product = Product::create([
@@ -64,8 +64,8 @@ class ProductController extends Controller
             foreach ($request->image_urls as $imageUrl) {
                 $path = parse_url($imageUrl, PHP_URL_PATH);
 
-                $relativePath = str_replace('storage/temp/', '', $path);
-                $relativeName = str_replace('storage/temp/images/', '', $path);
+                $relativePath = str_replace('/storage/temp/', '', $path);
+                $relativeName = str_replace('/storage/temp/images/', '', $path);
                 $imageRecord = File::create([
                     'file_name' => $relativeName,
                     'file_path' => $relativePath,
