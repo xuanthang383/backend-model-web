@@ -23,21 +23,30 @@ class ProductController extends BaseController
     public function show($id)
     {
         $product = Product::with(['category', 'tags', 'files'])->find($id);
-    
+
         if (!$product) {
             return response()->json(['r' => 0, 'msg' => 'Product not found'], 404);
         }
-    
-        // Lấy danh sách hình ảnh từ bảng `files` thông qua `product_files`
-        $imageFiles = File::whereIn('id', ProductFiles::where('product_id', $id)->pluck('file_id'))
+
+        // Lấy tất cả `file_path` từ `product_files` và `files`
+        $allFiles = File::whereIn('id', ProductFiles::where('product_id', $id)->pluck('file_id'))
             ->pluck('file_path')
             ->map(function ($filePath) {
                 return env('URL_IMAGE') . $filePath;
-            })
-            ->toArray(); // Chuyển về mảng
-    
+            });
+
+        // Lọc chỉ lấy những file có chứa "images/" vào `listImageSrc`
+        $imageFiles = $allFiles->filter(function ($filePath) {
+            return str_contains($filePath, 'images/');
+        })->values(); // Reset index của array
+
+        // Xác định file model (không phải ảnh)
+        $modelFile = $allFiles->first(function ($filePath) {
+            return !str_contains($filePath, 'images/');
+        });
+
         return response()->json([
-            'r' => 0,
+            'r' => 1,
             'msg' => 'Product retrieved successfully',
             'data' => [
                 'id' => $product->id,
@@ -48,11 +57,11 @@ class ProductController extends BaseController
                 'category_id' => $product->category_id,
                 'platform_id' => $product->platform_id,
                 'render_id' => $product->render_id,
-                'file_path' => $product->file_path ? env('URL_IMAGE') . $product->file_path : null,
-                'image_path' => $product->image_path ? env('URL_IMAGE') . $product->image_path : null,
+                'file_path' => $modelFile ?? null, // Nếu không tìm thấy file model, trả về null
+                'image_path' => $imageFiles->first() ?? null, // Lấy ảnh đầu tiên làm `image_path`
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
-                'listImageSrc' => $imageFiles, // Danh sách ảnh
+                'listImageSrc' => $imageFiles->toArray(), // Danh sách ảnh
                 'category' => $product->category,
                 'tags' => $product->tags,
                 'files' => $product->files,
@@ -61,9 +70,10 @@ class ProductController extends BaseController
             ]
         ]);
     }
-    
 
-    
+
+
+
 
     public function store(Request $request)
     {
