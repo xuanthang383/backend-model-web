@@ -22,7 +22,7 @@ class ProductController extends BaseController
 
     public function show($id)
     {
-        $product = Product::with(['category', 'tags', 'files'])->find($id);
+        $product = Product::with(['category', 'tags', 'files', 'platform', 'render'])->find($id);
 
         if (!$product) {
             return response()->json(['r' => 0, 'msg' => 'Product not found'], 404);
@@ -55,8 +55,8 @@ class ProductController extends BaseController
                 'is_favorite' => $product->is_favorite ?? 0,
                 'description' => $product->description,
                 'category_id' => $product->category_id,
-                'platform_id' => $product->platform_id,
-                'render_id' => $product->render_id,
+                'platform' => $product->platform,
+                'render' => $product->render,
                 'file_path' => $modelFile ?? null, // Nếu không tìm thấy file model, trả về null
                 'image_path' => $imageFiles->first() ?? null, // Lấy ảnh đầu tiên làm `image_path`
                 'created_at' => $product->created_at,

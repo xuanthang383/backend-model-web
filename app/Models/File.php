@@ -14,4 +14,9 @@ class File extends Model
     {
         return $this->belongsTo(Product::class);
     }
+    public function files()
+    {
+        return $this->hasMany(ProductFiles::class);
+    }
+
 }

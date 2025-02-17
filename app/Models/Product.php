@@ -28,12 +28,12 @@ class Product extends Model
 
     public function platform()
     {
-        return $this->belongsTo(Platform::class);
+        return $this->belongsTo(Platform::class, 'platform_id');
     }
 
     public function render()
     {
-        return $this->belongsTo(Render::class);
+        return $this->belongsTo(Render::class, 'render_id');
     }
 
     public function colors()
