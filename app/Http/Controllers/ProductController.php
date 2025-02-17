@@ -37,7 +37,7 @@ class ProductController extends BaseController
             ->toArray(); // Chuyển về mảng
     
         return response()->json([
-            'r' => 1,
+            'r' => 0,
             'msg' => 'Product retrieved successfully',
             'data' => [
                 'id' => $product->id,
