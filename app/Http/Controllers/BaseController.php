@@ -9,13 +9,21 @@ class BaseController extends Controller
     {
         $limit = $request->input('limit', 10);
         $data = $query->paginate($limit);
-
+    
+        // Thêm URL đầy đủ vào `image_path` và `file_path`
+        $data->getCollection()->transform(function ($product) {
+            $product->image_path = $product->image_path ? env('URL_IMAGE') . $product->image_path : null;
+            $product->file_path = $product->file_path ? env('URL_IMAGE') . $product->file_path : null;
+            return $product;
+        });
+    
         return response()->json([
             'r' => 0,
             'msg' => $message,
             'data' => $data->items(),
         ]);
     }
+    
 
     public function successResponse($data, $message = "Success")
     {
