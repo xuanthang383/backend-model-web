@@ -3,8 +3,14 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ColorController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RenderController;
+use App\Http\Controllers\TagController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,35 +25,31 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
-// Route::post('/login', function () {
-//     return ['dungtq test post hihi' => app()->version()];
-// });
-
-Route::post('/register', [RegisteredUserController::class, 'store'])
-    ->middleware('guest')
-    ->name('api.register');
-
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-    ->middleware('guest')
-    ->name('api.login');
-
+// ✅ API công khai (Không cần auth)
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/platforms', [PlatformController::class, 'index']);
+Route::get('/renders', [RenderController::class, 'index']);
+Route::get('/colors', [ColorController::class, 'index']);
+Route::get('/materials', [MaterialController::class, 'index']);
+Route::get('/tags', [TagController::class, 'index']);
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('guest');
+// ✅ API xác thực người dùng
+Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('guest')->name('api.register');
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('api.login');
 
-// Route::post('/forgots-password', [PasswordResetLinkController::class, 'store'])
-//     ->middleware('guest')
-//     ->name('password.email');
+// ✅ API cần bảo vệ (Yêu cầu đăng nhập)
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 
-// Route::post('/upload-3d', [FileUploadController::class, 'upload3DModel']);
-// ->middleware('auth:sanctum'); // ✅ Dùng Sanctum nếu API dùng token
-Route::post('/upload-temp-images', [FileUploadController::class, 'uploadTempImage']);
-Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
-Route::post('/products', [ProductController::class, 'store']);
+    // Upload file (Chỉ user đăng nhập mới có quyền)
+    Route::post('/upload-temp-images', [FileUploadController::class, 'uploadTempImage']);
+    Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
 
-// Route::get('/access', [AuthenticatedSessionController::class, 'firstAccess']);
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+    // Tạo mới sản phẩm
+    Route::post('/products', [ProductController::class, 'store']);
 });

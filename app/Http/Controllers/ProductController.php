@@ -12,6 +12,21 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
+    public function index()
+    {
+        return response()->json(Product::with(['category', 'platform', 'render', 'material', 'colors', 'tags'])->get(), 200);
+    }
+
+    public function show($id)
+    {
+        $product = Product::with(['category', 'platform', 'render', 'material', 'colors', 'tags'])->find($id);
+        
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        return response()->json($product, 200);
+    }
     public function store(Request $request)
     {
         $request->validate([
