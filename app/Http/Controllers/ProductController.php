@@ -22,18 +22,48 @@ class ProductController extends BaseController
 
     public function show($id)
     {
-        $product = Product::with(['category', 'tags', 'files', 'colors', 'materials'])->find($id);
-
+        $product = Product::with(['category', 'tags', 'files'])->find($id);
+    
         if (!$product) {
             return response()->json(['r' => 0, 'msg' => 'Product not found'], 404);
         }
-
+    
+        // Lấy danh sách hình ảnh từ bảng `files` thông qua `product_files`
+        $imageFiles = File::whereIn('id', ProductFiles::where('product_id', $id)->pluck('file_id'))
+            ->pluck('file_path')
+            ->map(function ($filePath) {
+                return env('URL_IMAGE') . $filePath;
+            })
+            ->toArray(); // Chuyển về mảng
+    
         return response()->json([
             'r' => 1,
             'msg' => 'Product retrieved successfully',
-            'data' => $product
+            'data' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'is_ads' => $product->is_ads ?? 0,
+                'is_favorite' => $product->is_favorite ?? 0,
+                'description' => $product->description,
+                'category_id' => $product->category_id,
+                'platform_id' => $product->platform_id,
+                'render_id' => $product->render_id,
+                'file_path' => $product->file_path ? env('URL_IMAGE') . $product->file_path : null,
+                'image_path' => $product->image_path ? env('URL_IMAGE') . $product->image_path : null,
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+                'listImageSrc' => $imageFiles, // Danh sách ảnh
+                'category' => $product->category,
+                'tags' => $product->tags,
+                'files' => $product->files,
+                'colors' => $product->colors ?? [],
+                'materials' => $product->materials ?? []
+            ]
         ]);
     }
+    
+
+    
 
     public function store(Request $request)
     {
