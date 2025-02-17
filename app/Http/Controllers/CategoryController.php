@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Material;
+use App\Models\Platform;
+use App\Models\Render;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class CategoryController extends BaseController
@@ -20,7 +24,10 @@ class CategoryController extends BaseController
      */
     public function store(Request $request)
     {
-        //
+        Material::create(['name' => 'Wood']);
+        Material::create(['name' => 'Metal']);
+        Material::create(['name' => 'Plastic']);
+        Material::create(['name' => 'Glass']);
     }
 
     /**

@@ -39,7 +39,8 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 // ✅ API xác thực người dùng
 Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('guest')->name('api.register');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('api.login');
-
+Route::post('/cate', [CategoryController::class, 'store'])->middleware('guest')->name('api.cate');
+Route::post('/products', [ProductController::class, 'store']);
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
@@ -51,5 +52,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
 
     // Tạo mới sản phẩm
-    Route::post('/products', [ProductController::class, 'store']);
+    // Route::post('/products', [ProductController::class, 'store']);
 });
