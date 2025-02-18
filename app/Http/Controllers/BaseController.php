@@ -8,16 +8,21 @@ class BaseController extends Controller
 {
     public function paginateResponse($query, Request $request, $message = "Success")
     {
-        $limit = $request->input('limit', 10);
+        // Lấy số lượng bản ghi trên mỗi trang, mặc định là 10
+        $limit = (int) $request->input('limit', 10);
+        $limit = ($limit > 0) ? $limit : 10; // Đảm bảo `limit` hợp lệ
+    
+        // Kiểm tra nếu có yêu cầu sắp xếp dữ liệu
+        if ($request->has('sort') && $request->has('order')) {
+            $sortColumn = $request->input('sort');
+            $sortOrder = $request->input('order', 'asc');
+            $query = $query->orderBy($sortColumn, $sortOrder);
+        }
+    
+        // Phân trang dữ liệu
         $data = $query->paginate($limit);
-
-        // Thêm URL đầy đủ vào `image_path` và `file_path`
-        $data->getCollection()->transform(function ($product) {
-            $product->image_path = $product->image_path ? env('URL_IMAGE') . $product->image_path : null;
-            $product->file_path = $product->file_path ? env('URL_IMAGE') . $product->file_path : null;
-            return $product;
-        });
-
+    
+        // Trả về JSON response
         return response()->json([
             'r' => 0,
             'msg' => $message,
@@ -36,6 +41,7 @@ class BaseController extends Controller
             ]
         ]);
     }
+    
 
 
     public function successResponse($data, $message = "Success")
