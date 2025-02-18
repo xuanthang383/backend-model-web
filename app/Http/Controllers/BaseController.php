@@ -6,22 +6,27 @@ use Illuminate\Http\Request;
 
 class BaseController extends Controller
 {
-    public function paginateResponse($query, Request $request, $message = "Success")
+    public function paginateResponse($query, Request $request, $message = "Success", callable $callback = null)
     {
         // Lấy số lượng bản ghi trên mỗi trang, mặc định là 10
         $limit = (int) $request->input('limit', 10);
         $limit = ($limit > 0) ? $limit : 10; // Đảm bảo `limit` hợp lệ
-    
+
         // Kiểm tra nếu có yêu cầu sắp xếp dữ liệu
         if ($request->has('sort') && $request->has('order')) {
             $sortColumn = $request->input('sort');
             $sortOrder = $request->input('order', 'asc');
             $query = $query->orderBy($sortColumn, $sortOrder);
         }
-    
+
         // Phân trang dữ liệu
         $data = $query->paginate($limit);
-    
+
+        // Nếu có callback xử lý dữ liệu, áp dụng vào collection
+        if ($callback) {
+            $data->getCollection()->transform($callback);
+        }
+
         // Trả về JSON response
         return response()->json([
             'r' => 0,
@@ -35,7 +40,8 @@ class BaseController extends Controller
             ]
         ]);
     }
-    
+
+
 
 
     public function successResponse($data, $message = "Success")

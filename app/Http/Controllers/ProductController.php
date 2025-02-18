@@ -16,7 +16,11 @@ class ProductController extends BaseController
 {
     public function index(Request $request)
     {
-        return $this->paginateResponse(Product::query(), $request);
+        return $this->paginateResponse(Product::query(), $request, "Success", function ($product) {
+            $product->image_path = $product->image_path ? env('URL_IMAGE') . $product->image_path : null;
+            $product->file_path = $product->file_path ? env('URL_IMAGE') . $product->file_path : null;
+            return $product;
+        });
     }
 
 
