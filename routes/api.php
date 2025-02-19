@@ -60,18 +60,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json([
             'r' => 0,
             'msg' => 'User token retrieved successfully',
-            'data' => [
-            'token' => $request->bearerToken(),
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role_id' => $user->role_id,
-                    'created_at' => $user->created_at,
-                    'updated_at' => $user->updated_at,
-                    'email_verified_at' => $user->email_verified_at,
-                ],
-            ],
+            'data' => $user // Trả về luôn object user
         ]);
     });
 
