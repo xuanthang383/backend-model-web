@@ -16,7 +16,20 @@ class CategoryController extends BaseController
      */
     public function index(Request $request)
     {
-        return $this->paginateResponse(Category::query(), $request);
+        $query = Category::whereNull('parent_id')->with('children');
+
+        return $this->paginateResponse($query, $request, "get list category", function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'children' => $category->children->map(function ($child) {
+                    return [
+                        'id' => $child->id,
+                        'name' => $child->name,
+                    ];
+                }),
+            ];
+        });
     }
 
     /**
