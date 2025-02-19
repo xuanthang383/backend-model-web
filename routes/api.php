@@ -47,9 +47,31 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return $request->user();
     });
     Route::get('/user-token', function (Request $request) {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'r' => 1,
+                'msg' => 'Unauthorized',
+                'data' => null,
+            ], 401);
+        }
+    
         return response()->json([
+            'r' => 0,
+            'msg' => 'User token retrieved successfully',
+            'data' => [
             'token' => $request->bearerToken(),
-            'user' => $request->user()
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role_id' => $user->role_id,
+                    'created_at' => $user->created_at,
+                    'updated_at' => $user->updated_at,
+                    'email_verified_at' => $user->email_verified_at,
+                ],
+            ],
         ]);
     });
 
