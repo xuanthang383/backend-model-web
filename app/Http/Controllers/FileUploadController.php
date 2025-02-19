@@ -15,7 +15,8 @@ class FileUploadController extends Controller
     private function storeTempFile($file, $folder)
     {
         try {
-            $filePath = $file->store("temp/{$folder}", 'public');
+            $fileName = time() . "_" . $file->getClientOriginalName();
+            $filePath = $file->storeAs("temp/{$folder}", $fileName, 'public');
 
             if (!$filePath) {
                 Log::error("Lưu file thất bại!", [

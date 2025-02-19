@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -26,9 +27,10 @@ class UploadFileToS3 implements ShouldQueue
 
     public function handle()
     {
-        $fileUrl = request()->get('file_url'); 
+        $fileUrl = request()->get('file_url');
         $parsedUrl = parse_url(url: $fileUrl);
         $filePath = $parsedUrl['path'];
+        $filePath = preg_replace('/^\/storage/', '', $filePath);
 
         $fileContent = Storage::disk('public')->get($filePath);
 
@@ -42,7 +44,7 @@ class UploadFileToS3 implements ShouldQueue
         if (!$uploaded) {
             return false;
         }
-    
+
         return true;
     }
 }
