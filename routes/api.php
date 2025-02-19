@@ -46,6 +46,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::get('/user-token', function (Request $request) {
+        return response()->json([
+            'token' => $request->bearerToken(),
+            'user' => $request->user()
+        ]);
+    });
 
     // Upload file (Chỉ user đăng nhập mới có quyền)
     Route::post('/upload-temp-images', [FileUploadController::class, 'uploadTempImage']);
