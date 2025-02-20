@@ -96,7 +96,6 @@ class ProductController extends BaseController
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id'
         ]);
-        dd(11);
 
         $uploadedBy = Auth::id() ?? 1;
         $filesToInsert = [];
@@ -105,7 +104,6 @@ class ProductController extends BaseController
         $filePath = parse_url($request->file_url, PHP_URL_PATH);
         $relativeFilePath = str_replace('/storage/temp/', '', $filePath);
         $relativeFileName = str_replace('/storage/temp/models/', '', $filePath);
-        // dd(11);
 
         // 🛑 Tạo Product mới
         $product = Product::create([
