@@ -11,6 +11,7 @@ use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\TestFileUploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -48,7 +49,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
     Route::get('/user-token', function (Request $request) {
         $user = $request->user();
-        
+
         if (!$user) {
             return response()->json([
                 'r' => 1,
@@ -56,7 +57,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'data' => null,
             ], 401);
         }
-    
+
         return response()->json([
             'r' => 0,
             'msg' => 'User token retrieved successfully',
@@ -69,5 +70,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
 
     // Tạo mới sản phẩm
-    // Route::post('/products', [ProductController::class, 'store']);
+    Route::post('/products', [ProductController::class, 'store']);
 });
