@@ -83,13 +83,12 @@ class ProductController extends BaseController
     {
         $request->validate([
             'name' => 'required|string',
-            'description' => 'nullable|string',
             'category_id' => 'required|integer|exists:categories,id',
             'platform_id' => 'nullable|integer|exists:platforms,id',
             'render_id' => 'nullable|integer|exists:renders,id',
             'file_url' => ['required', 'url'],
             'image_urls' => 'nullable|array',
-            'image_urls.*' => ['url'],
+            // 'image_urls.*' => ['url'],
             'color_ids' => 'nullable|array',
             'color_ids.*' => 'integer|exists:colors,id',
             'material_ids' => 'nullable|array',
@@ -97,6 +96,7 @@ class ProductController extends BaseController
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id'
         ]);
+        dd(11);
 
         $uploadedBy = Auth::id() ?? 1;
         $filesToInsert = [];
@@ -105,6 +105,7 @@ class ProductController extends BaseController
         $filePath = parse_url($request->file_url, PHP_URL_PATH);
         $relativeFilePath = str_replace('/storage/temp/', '', $filePath);
         $relativeFileName = str_replace('/storage/temp/models/', '', $filePath);
+        // dd(11);
 
         // 🛑 Tạo Product mới
         $product = Product::create([
@@ -126,7 +127,6 @@ class ProductController extends BaseController
         if (!empty($request->material_ids)) {
             $product->materials()->attach($request->material_ids);
         }
-
         // 🛑 Lưu Tags vào bảng `product_tags`
         if (!empty($request->tag_ids)) {
             $product->tags()->attach($request->tag_ids);
