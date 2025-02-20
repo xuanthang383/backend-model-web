@@ -28,7 +28,7 @@ class UploadFileToS3 implements ShouldQueue
     public function handle()
     {
         $fileUrl = request()->get('file_url');
-        $parsedUrl = parse_url(url: $fileUrl);
+        $parsedUrl = parse_url(url: $this->fileUrl);
         $filePath = $parsedUrl['path'];
         $filePath = preg_replace('/^\/storage/', '', $filePath);
 
