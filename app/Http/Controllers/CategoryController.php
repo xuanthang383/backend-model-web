@@ -18,7 +18,7 @@ class CategoryController extends BaseController
     {
         $query = Category::whereNull('parent_id')->with('children');
 
-        return $this->paginateResponse($query, $request, "get list category", function ($category) {
+        return $this->paginateResponse($query, $request, "Get list category", function ($category) {
             return [
                 'id' => $category->id,
                 'name' => $category->name,

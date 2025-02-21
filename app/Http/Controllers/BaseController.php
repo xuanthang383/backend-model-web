@@ -10,6 +10,7 @@ class BaseController extends Controller
     {
         // Lấy số lượng bản ghi trên mỗi trang, mặc định là 10
         $limit = (int) $request->input('limit', 10);
+        $page = (int) $request->input('page', 1);
         $limit = ($limit > 0) ? $limit : 10; // Đảm bảo `limit` hợp lệ
 
         // Kiểm tra nếu có yêu cầu sắp xếp dữ liệu
@@ -20,7 +21,7 @@ class BaseController extends Controller
         }
 
         // Phân trang dữ liệu
-        $data = $query->paginate($limit);
+        $data = $query->paginate($limit, ['*'], 'page', $page);
 
         // Nếu có callback xử lý dữ liệu, áp dụng vào collection
         if ($callback) {
