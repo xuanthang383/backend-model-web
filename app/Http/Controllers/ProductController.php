@@ -21,17 +21,17 @@ class ProductController extends BaseController
                 ->join('product_files as pf', 'files.id', '=', 'pf.file_id') // Join bảng trung gian
                 ->where('pf.is_thumbnail', true); // Chỉ lấy ảnh thumbnail
         }]);
-    
+
         return $this->paginateResponse($query, $request, "Success", function ($product) {
             // Lấy file có `is_thumbnail = true`
             $thumbnailFile = $product->files->first();
-    
+
             // Gán chỉ `thumbnail` vào response
             $product->thumbnail = $thumbnailFile ? env('URL_IMAGE') . $thumbnailFile->file_path : null;
-    
+
             // Xóa các trường không cần thiết
             unset($product->files);
-    
+
             return $product;
         });
     }
@@ -52,15 +52,24 @@ class ProductController extends BaseController
                 return env('URL_IMAGE') . $filePath;
             });
 
-        // Lọc chỉ lấy những file có chứa "images/" vào `listImageSrc`
+        // Lọc chỉ lấy những file có chứa "images/"
         $imageFiles = $allFiles->filter(function ($filePath) {
             return str_contains($filePath, 'images/');
         })->values(); // Reset index của array
 
-        // Xác định file model (không phải ảnh)
-        $modelFile = $allFiles->first(function ($filePath) {
-            return !str_contains($filePath, 'images/');
-        });
+        // Lấy thumbnail từ ảnh có `image = true` trong `product_files`
+        $thumbnail = ProductFiles::where('product_id', $id)
+            ->where('is_thumbnail', true)
+            ->first();
+
+        $thumbnailPath = $thumbnail ? env('URL_IMAGE') . File::find($thumbnail->file_id)->file_path : null;
+
+        // Lấy `file_path` từ bảng `product_files` có `is_model = 1`
+        $modelFileRecord = ProductFiles::where('product_id', $id)
+            ->where('is_model', 1)
+            ->first();
+
+        $modelFilePath = $modelFileRecord ? env('URL_IMAGE') . File::find($modelFileRecord->file_id)->file_path : null;
 
         return response()->json([
             'r' => 1,
@@ -74,8 +83,8 @@ class ProductController extends BaseController
                 'category_id' => $product->category_id,
                 'platform' => $product->platform,
                 'render' => $product->render,
-                'file_path' => $modelFile ?? null, // Nếu không tìm thấy file model, trả về null
-                'image_path' => $imageFiles->first() ?? null, // Lấy ảnh đầu tiên làm `image_path`
+                'file_path' => $modelFilePath, // Lấy file model từ product_files có is_model = 1
+                'thumbnail' => $thumbnailPath, // Ảnh được chọn làm thumbnail
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
                 'listImageSrc' => $imageFiles->toArray(), // Danh sách ảnh
@@ -87,6 +96,8 @@ class ProductController extends BaseController
             ]
         ]);
     }
+
+
 
 
 
@@ -131,7 +142,8 @@ class ProductController extends BaseController
         $relativeFilePath = str_replace('/storage/temp/', '', $filePath);
         $relativeFileName = str_replace('/storage/temp/models/', '', $filePath);
 
-        // 🛑 Tạo Product mới
+        // 🛑 Tạo Product mới Ubuntu
+        //WSL integration with distro 'Ubuntu' unexpectedly stopped. Do you want to restart it?
         $product = Product::create([
             'name' => $request->name,
             'category_id' => $request->category_id,
