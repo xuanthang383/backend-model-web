@@ -45,8 +45,9 @@ class Product extends Model
 
     public function files()
     {
-        return $this->hasMany(ProductFiles::class);
+        return $this->hasManyThrough(File::class, ProductFiles::class, 'product_id', 'id', 'id', 'file_id');
     }
+
 
     public function tags()
     {

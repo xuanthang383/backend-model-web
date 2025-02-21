@@ -16,9 +16,22 @@ class ProductController extends BaseController
 {
     public function index(Request $request)
     {
-        return $this->paginateResponse(Product::query(), $request, "Success", function ($product) {
-            $product->image_path = $product->image_path ? env('URL_IMAGE') . $product->image_path : null;
-            $product->file_path = $product->file_path ? env('URL_IMAGE') . $product->file_path : null;
+        $query = Product::query()->with(['files' => function ($query) {
+            $query->select('files.id', 'files.file_path', 'pf.product_id', 'pf.is_thumbnail')
+                ->join('product_files as pf', 'files.id', '=', 'pf.file_id') // Join bảng trung gian
+                ->where('pf.is_thumbnail', true); // Chỉ lấy ảnh thumbnail
+        }]);
+    
+        return $this->paginateResponse($query, $request, "Success", function ($product) {
+            // Lấy file có `is_thumbnail = true`
+            $thumbnailFile = $product->files->first();
+    
+            // Gán chỉ `thumbnail` vào response
+            $product->thumbnail = $thumbnailFile ? env('URL_IMAGE') . $thumbnailFile->file_path : null;
+    
+            // Xóa các trường không cần thiết
+            unset($product->files);
+    
             return $product;
         });
     }
