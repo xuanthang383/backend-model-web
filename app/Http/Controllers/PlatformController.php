@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Platform;
+use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
 
 class PlatformController extends BaseController
@@ -20,7 +21,31 @@ class PlatformController extends BaseController
      */
     public function store(Request $request)
     {
-        //
+        try {
+            // Validate dữ liệu đầu vào
+            $request->validate([
+                'name' => 'required|string|max:255|unique:platforms,name',
+            ]);
+
+            // Tạo platform
+            $platform = Platform::create([
+                'name' => $request->name
+            ]);
+
+            return response()->json([
+                'message' => 'Platform created successfully!',
+                'platform' => $platform
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Something went wrong!',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

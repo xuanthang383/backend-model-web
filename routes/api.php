@@ -65,7 +65,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ]);
     });
 
-    // Upload file (Chỉ user đăng nhập mới có quyền)
+    Route::post('/tags', [TagController::class, 'store']);
+    Route::post('/materials', [MaterialController::class, 'store']);
+    Route::post('/platforms', [PlatformController::class, 'store']);
+    Route::post('/renders', [RenderController::class, 'store']);
+    Route::post('/colors', [ColorController::class, 'store']);
     Route::post('/upload-temp-images', [FileUploadController::class, 'uploadTempImage']);
     Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
 
