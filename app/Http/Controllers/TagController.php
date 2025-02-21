@@ -19,7 +19,7 @@ class TagController extends BaseController
         if ($request->has('search')) {
             $query->where('name', 'LIKE', '%' . $request->search . '%');
         }
-        return $this->paginateResponse(Tag::query(), $request);
+        return $this->paginateResponse($query, $request);
     }
 
     /**
