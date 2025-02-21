@@ -86,8 +86,17 @@ class ProductController extends BaseController
             'category_id' => 'required|integer|exists:categories,id',
             'platform_id' => 'nullable|integer|exists:platforms,id',
             'render_id' => 'nullable|integer|exists:renders,id',
-            'file_url' => ['required', 'url'],
+            'file_url' => ['required', 'url', function ($attribute, $value, $fail) {
+                if (!preg_match('/\.(rar|zip)$/i', $value)) {
+                    $fail('The file_url must be a valid RAR or ZIP file.');
+                }
+            }],
             'image_urls' => 'nullable|array',
+            'image_urls.*' => ['required', 'url', function ($attribute, $value, $fail) {
+                if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value)) {
+                    $fail('Each image must be a valid image URL (jpg, jpeg, png, gif, webp).');
+                }
+            }],
             // 'image_urls.*' => ['url'],
             'color_ids' => 'nullable|array',
             'color_ids.*' => 'integer|exists:colors,id',
@@ -95,6 +104,10 @@ class ProductController extends BaseController
             'material_ids.*' => 'integer|exists:materials,id',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id'
+        ]);
+        $request->validate([
+            'image_urls' => 'nullable|array',
+
         ]);
 
         $uploadedBy = Auth::id() ?? 1;
@@ -108,12 +121,9 @@ class ProductController extends BaseController
         // 🛑 Tạo Product mới
         $product = Product::create([
             'name' => $request->name,
-            'description' => $request->description,
             'category_id' => $request->category_id,
             'platform_id' => $request->platform_id,
             'render_id' => $request->render_id,
-            'file_path' => $relativeFilePath,
-            'image_path' => null,
         ]);
 
         // 🛑 Lưu Colors vào bảng `product_colors`
@@ -142,15 +152,20 @@ class ProductController extends BaseController
 
         ProductFiles::create([
             'file_id' => $fileRecord->id,
-            'product_id' => $product->id
+            'product_id' => $product->id,
+            'is_model' => true
         ]);
 
         $filesToInsert[] = $fileRecord;
 
         // 🔥 Xử lý danh sách `image_urls`
         $imagePaths = [];
+
         if (!empty($request->image_urls) && is_array($request->image_urls)) {
-            foreach ($request->image_urls as $imageUrl) {
+            $imageUrls = array_values($request->image_urls);
+
+            foreach ($imageUrls as $key => $imageUrl) {
+
                 $imgPath = parse_url($imageUrl, PHP_URL_PATH);
                 $relativeImgPath = str_replace('/storage/temp/', '', $imgPath);
                 $relativeImgName = str_replace('/storage/temp/images/', '', $imgPath);
@@ -163,10 +178,16 @@ class ProductController extends BaseController
 
                 dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
 
-                ProductFiles::create([
+                $dataInsert = [
                     'file_id' => $imageRecord->id,
-                    'product_id' => $product->id
-                ]);
+                    'product_id' => $product->id,
+                ];
+
+                if ($key == 0) {
+                    $dataInsert['is_thumbnail'] = true;
+                }
+
+                ProductFiles::create($dataInsert);
 
                 $filesToInsert[] = $imageRecord;
                 $imagePaths[] = $relativeImgPath;
