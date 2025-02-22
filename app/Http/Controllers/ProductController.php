@@ -106,7 +106,7 @@ class ProductController extends BaseController
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
+            'name' => 'required|string|unique:products,name',
             'category_id' => 'required|integer|exists:categories,id',
             'platform_id' => 'nullable|integer|exists:platforms,id',
             'render_id' => 'nullable|integer|exists:renders,id',
