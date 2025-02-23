@@ -69,7 +69,7 @@ class FileUploadController extends Controller
             // Kiểm tra file có hợp lệ không
             if (!$file->isValid()) {
                 Log::error("Upload thất bại: " . $file->getErrorMessage(), [
-                    'filename' => $file->getClientOriginalName(),
+                    'filename' => trim($file->getClientOriginalName()),
                     'folder' => $folder
                 ]);
                 return response()->json(['error' => 'File upload failed', 'message' => $file->getErrorMessage()], 400);
