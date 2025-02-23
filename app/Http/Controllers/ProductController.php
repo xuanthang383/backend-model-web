@@ -27,7 +27,7 @@ class ProductController extends BaseController
             $thumbnailFile = $product->files->first();
 
             // Gán chỉ `thumbnail` vào response
-            $product->thumbnail = $thumbnailFile ? env('URL_IMAGE') . $thumbnailFile->file_path : null;
+            $product->thumbnail = $thumbnailFile ? $thumbnailFile->file_path : null;
 
             // Xóa các trường không cần thiết
             unset($product->files);
@@ -49,7 +49,7 @@ class ProductController extends BaseController
         $allFiles = File::whereIn('id', ProductFiles::where('product_id', $id)->pluck('file_id'))
             ->pluck('file_path')
             ->map(function ($filePath) {
-                return env('URL_IMAGE') . $filePath;
+                return $filePath;
             });
 
         // Lọc chỉ lấy những file có chứa "images/"
@@ -62,14 +62,14 @@ class ProductController extends BaseController
             ->where('is_thumbnail', true)
             ->first();
 
-        $thumbnailPath = $thumbnail ? env('URL_IMAGE') . File::find($thumbnail->file_id)->file_path : null;
+        $thumbnailPath = $thumbnail ? File::find($thumbnail->file_id)->file_path : null;
 
         // Lấy `file_path` từ bảng `product_files` có `is_model = 1`
         $modelFileRecord = ProductFiles::where('product_id', $id)
             ->where('is_model', 1)
             ->first();
 
-        $modelFilePath = $modelFileRecord ? env('URL_IMAGE') . File::find($modelFileRecord->file_id)->file_path : null;
+        $modelFilePath = $modelFileRecord ? File::find($modelFileRecord->file_id)->file_path : null;
 
         return response()->json([
             'r' => 1,
@@ -168,7 +168,7 @@ class ProductController extends BaseController
         // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
         $fileRecord = File::create([
             'file_name' => $relativeFileName,
-            'file_path' => $relativeFilePath,
+            'file_path' => env('URL_IMAGE').$relativeFilePath,
             'uploaded_by' => $uploadedBy
         ]);
 
@@ -197,7 +197,7 @@ class ProductController extends BaseController
 
                 $imageRecord = File::create([
                     'file_name' => $relativeImgName,
-                    'file_path' => $relativeImgPath,
+                    'file_path' => env('URL_IMAGE').$relativeImgPath,
                     'uploaded_by' => $uploadedBy
                 ]);
 
