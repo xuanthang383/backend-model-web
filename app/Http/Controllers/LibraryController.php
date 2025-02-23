@@ -23,8 +23,6 @@ class LibraryController extends BaseController
         ]);
 
         $userId = Auth::id();
-        dd(Auth::id());
-
         // Tạo mới thư viện
         $library = Library::create([
             'user_id'     => $userId,
