@@ -42,7 +42,9 @@ class LibraryController extends BaseController
         $userId = Auth::id();
         // Kiểm tra thư viện có thuộc về người dùng hiện tại không
         $library = Library::where('user_id', $userId)->findOrFail($libraryId);
-
+        if(!$library) {
+            return $this->errorResponse($library, 'Library does not exist');
+        }
         // Validate dữ liệu, đảm bảo product_id tồn tại
         $validatedData = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
