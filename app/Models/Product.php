@@ -53,4 +53,9 @@ class Product extends Model
     {
         return $this->belongsToMany(Tag::class, 'product_tags');
     }
+
+    public function libraries()
+    {
+        return $this->belongsToMany(Library::class, 'library_product', 'product_id', 'library_id');
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
@@ -44,6 +45,26 @@ Route::post('/cate', [CategoryController::class, 'store'])->middleware('guest')-
 Route::post('/products', [ProductController::class, 'store']);
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/libraries', [LibraryController::class, 'storeLibrary']);
+
+    // Tạo mới thư viện
+
+    // Thêm model vào thư viện với tham số libraryId
+    Route::post('/libraries/{libraryId}/products', [LibraryController::class, 'addModelToLibrary']);
+
+    // (Tuỳ chọn) Xem danh sách thư viện của user hiện tại
+    Route::get('/libraries', [LibraryController::class, 'index']);
+
+    // (Tuỳ chọn) Xem chi tiết thư viện
+    Route::get('/libraries/{id}', [LibraryController::class, 'show']);
+
+    // (Tuỳ chọn) Cập nhật thư viện
+    Route::put('/libraries/{id}', [LibraryController::class, 'update']);
+    Route::patch('/libraries/{id}', [LibraryController::class, 'update']);
+
+    // (Tuỳ chọn) Xóa thư viện
+    Route::delete('/libraries/{id}', [LibraryController::class, 'destroy']);
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
