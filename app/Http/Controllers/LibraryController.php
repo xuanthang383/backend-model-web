@@ -38,7 +38,7 @@ class LibraryController extends BaseController
      * POST /api/libraries
      */
     public function addModelToLibrary(Request $request, $libraryId)
-    {
+    {   
         $userId = Auth::id();
         // Kiểm tra thư viện có thuộc về người dùng hiện tại không
         $library = Library::where('user_id', $userId)->findOrFail($libraryId);
@@ -72,13 +72,19 @@ class LibraryController extends BaseController
      */
     public function show($id)
     {
-        $userId = Auth::id();
+        $userId = Auth::id(); // Nếu Auth::id() null thì dùng 1 (hoặc có thể xử lý khác)
         
-        // Lấy thư viện theo id và user_id (đảm bảo user chỉ xem được thư viện của chính họ)
-        $library = Library::where('user_id', $userId)->findOrFail($id);
-
+        // Lấy thư viện theo id và user_id
+        $library = Library::where('user_id', $userId)->find($id);
+    
+        // Nếu không tìm thấy thư viện, trả về lỗi
+        if (!$library) {
+            return $this->errorResponse('Library not found', 404);
+        }
+    
         return $this->successResponse($library, 'Library details');
     }
+    
 
     /**
      * Cập nhật thông tin 1 thư viện (tuỳ chọn).
