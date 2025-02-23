@@ -15,7 +15,8 @@ class FileUploadController extends Controller
     private function storeTempFile($file, $folder)
     {
         try {
-            $fileName = time() . "_" . $file->getClientOriginalName();
+            $fileName = preg_replace('/\s+/', '', $file->getClientOriginalName());
+            // $fileName = time() . "_" . $file->getClientOriginalName();
             $filePath = $file->storeAs("temp/{$folder}", $fileName, 'public');
 
             if (!$filePath) {
@@ -69,7 +70,7 @@ class FileUploadController extends Controller
             // Kiểm tra file có hợp lệ không
             if (!$file->isValid()) {
                 Log::error("Upload thất bại: " . $file->getErrorMessage(), [
-                    'filename' => trim($file->getClientOriginalName()),
+                    'filename' => $file->getClientOriginalName(),
                     'folder' => $folder
                 ]);
                 return response()->json(['error' => 'File upload failed', 'message' => $file->getErrorMessage()], 400);
