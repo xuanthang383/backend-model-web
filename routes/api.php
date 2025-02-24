@@ -50,7 +50,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Tạo mới thư viện
 
     // Thêm model vào thư viện với tham số libraryId
-    Route::post('/libraries/{libraryId}/products', [LibraryController::class, 'addModelToLibrary']);
+    Route::post('/libraries/{id}', [LibraryController::class, 'addModelToLibrary']);
 
     // (Tuỳ chọn) Xem danh sách thư viện của user hiện tại
     Route::get('/libraries', [LibraryController::class, 'index']);
