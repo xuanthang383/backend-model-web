@@ -15,7 +15,8 @@ class LibraryController extends BaseController
      */
     public function index()
     {
-        $userId = Auth::id() ?? 1;
+        $userId = Auth::id();
+        // $userId = Auth::id() ?? 2;
         $libraries = Library::where('user_id', $userId)->get();
         return $this->successResponse($libraries, 'List of libraries');
     }
@@ -23,9 +24,10 @@ class LibraryController extends BaseController
     // Show thư viện
     public function show($id)
     {
-        $userId = Auth::id() ?? 2; // Nếu không có auth, dùng fallback (nếu cần)
+        $userId = Auth::id();
+        // $userId = Auth::id() ?? 2;
 
-        // Tìm thư viện theo id và user_id
+        // Tìm thư viện theo id và đảm bảo thuộc về user hiện tại
         $library = Library::where('user_id', $userId)
             ->where('id', $id)
             ->first();
@@ -34,16 +36,17 @@ class LibraryController extends BaseController
             return $this->errorResponse('Library not found or not owned by you', 404);
         }
 
-        // Lấy thư viện con đầu tiên của thư viện này (nếu có)
-        $child = Library::where('user_id', $userId)
+        // Lấy các thư viện con trực tiếp (1 cấp) của thư viện này
+        $children = Library::where('user_id', $userId)
             ->where('parent_id', $library->id)
-            ->first();
+            ->get();
 
-        // Gắn thư viện con vào thuộc tính 'child'
-        $library->child = $child;
+        // Gán danh sách các thư viện con vào thuộc tính children
+        $library->children = $children;
 
-        return $this->successResponse($library, 'Library details with one child');
+        return $this->successResponse($library, 'Library details with one level children');
     }
+
 
     public function storeLibrary(Request $request)
     {
