@@ -62,8 +62,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/libraries/product/{id}', [LibraryController::class, 'showProduct']);
 
     // (Tuỳ chọn) Cập nhật thư viện
-    Route::put('/libraries/{id}', [LibraryController::class, 'update']);
-    Route::patch('/libraries/{id}', [LibraryController::class, 'update']);
+    Route::put('/libraries/{id}', [LibraryController::class, 'updateLibrary']);
+    Route::patch('/libraries/{id}', [LibraryController::class, 'updateLibrary']);
 
     // (Tuỳ chọn) Xóa thư viện
     Route::delete('/libraries/{id}', [LibraryController::class, 'destroy']);

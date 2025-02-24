@@ -133,13 +133,15 @@ class LibraryController extends BaseController
      * Cập nhật thông tin 1 thư viện (tuỳ chọn).
      * PUT/PATCH /api/libraries/{id}
      */
-    public function update(Request $request, $id)
+    public function updateLibrary(Request $request, $id)
     {
-        $userId = Auth::id();
+        $userId = Auth::id()?:3;
 
         // Lấy thư viện của user hiện tại
-        $library = Library::where('user_id', $userId)->findOrFail($id);
-
+        $library = Library::where('user_id', $userId)->find($id);
+        if (!$library) {
+            return $this->errorResponse($library, 'Cannot find library');
+        }
         // Validate dữ liệu cập nhật
         $validatedData = $request->validate([
             'name'        => 'nullable|string|max:255',
