@@ -13,6 +13,38 @@ class LibraryController extends BaseController
      * Liệt kê tất cả các thư viện của user hiện tại (có phân trang).
      * GET /api/libraries
      */
+    public function index()
+    {
+        $userId = Auth::id() ?? 1;
+        $libraries = Library::where('user_id', $userId)->get();
+        return $this->successResponse($libraries, 'List of libraries');
+    }
+
+    // Show thư viện
+    public function show($id)
+    {
+        $userId = Auth::id() ?? 2; // Nếu không có auth, dùng fallback (nếu cần)
+
+        // Tìm thư viện theo id và user_id
+        $library = Library::where('user_id', $userId)
+            ->where('id', $id)
+            ->first();
+
+        if (!$library) {
+            return $this->errorResponse('Library not found or not owned by you', 404);
+        }
+
+        // Lấy thư viện con đầu tiên của thư viện này (nếu có)
+        $child = Library::where('user_id', $userId)
+            ->where('parent_id', $library->id)
+            ->first();
+
+        // Gắn thư viện con vào thuộc tính 'child'
+        $library->child = $child;
+
+        return $this->successResponse($library, 'Library details with one child');
+    }
+
     public function storeLibrary(Request $request)
     {
         // Validate dữ liệu đầu vào
@@ -40,11 +72,15 @@ class LibraryController extends BaseController
     public function addModelToLibrary(Request $request, $libraryId)
     {
         $userId = Auth::id();
+
         // Kiểm tra thư viện có thuộc về người dùng hiện tại không
         $library = Library::where('user_id', $userId)->findOrFail($libraryId);
-        if (!$library) {
-            return $this->errorResponse($library, 'Library does not exist');
+
+        // Kiểm tra: thư viện này không được dùng làm thư viện cha (không có thư viện con)
+        if (Library::where('parent_id', $library->id)->exists()) {
+            return $this->errorResponse('Cannot add model to a library that has children', 409);
         }
+
         // Validate dữ liệu, đảm bảo product_id tồn tại
         $validatedData = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
@@ -52,7 +88,7 @@ class LibraryController extends BaseController
 
         $productId = $validatedData['product_id'];
 
-        // Kiểm tra nếu model (product) đã tồn tại trong thư viện
+        // Kiểm tra nếu product đã tồn tại trong thư viện thì không thêm nữa
         if ($library->products()->where('products.id', $productId)->exists()) {
             return $this->errorResponse('Model already exists in the library', 409);
         }
@@ -60,17 +96,19 @@ class LibraryController extends BaseController
         // Attach product vào library qua bảng pivot
         $library->products()->attach($productId);
 
-        // (Tuỳ chọn) Lấy lại model vừa được thêm để trả về
+        // Lấy lại model vừa được thêm để trả về (tuỳ chọn)
         $product = Product::find($productId);
 
         return $this->successResponse($product, 'Model added to library successfully');
     }
 
+
+
     /**
      * Hiển thị chi tiết 1 thư viện (tuỳ chọn).
      * GET /api/libraries/{id}
      */
-    public function show($id)
+    public function showProduct($id)
     {
         $userId = Auth::id(); // Nếu Auth::id() null thì dùng 1 (hoặc có thể xử lý khác)
         $userId = Auth::id() ?? 2;

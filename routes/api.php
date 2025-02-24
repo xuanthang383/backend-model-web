@@ -45,9 +45,9 @@ Route::post('/cate', [CategoryController::class, 'store'])->middleware('guest')-
 Route::post('/products', [ProductController::class, 'store']);
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/libraries', [LibraryController::class, 'storeLibrary']);
 
     // Tạo mới thư viện
+    Route::post('/libraries', [LibraryController::class, 'storeLibrary']);
 
     // Thêm model vào thư viện với tham số libraryId
     Route::post('/libraries/{id}', [LibraryController::class, 'addModelToLibrary']);
@@ -55,8 +55,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // (Tuỳ chọn) Xem danh sách thư viện của user hiện tại
     Route::get('/libraries', [LibraryController::class, 'index']);
 
-    // (Tuỳ chọn) Xem chi tiết thư viện
+    // (Tuỳ chọn) Xem chi tiết của 1 thư viện
     Route::get('/libraries/{id}', [LibraryController::class, 'show']);
+
+    // (Tuỳ chọn) Xem danh sách sản phẩm trong thư viện
+    Route::get('/libraries/product/{id}', [LibraryController::class, 'showProduct']);
 
     // (Tuỳ chọn) Cập nhật thư viện
     Route::put('/libraries/{id}', [LibraryController::class, 'update']);
