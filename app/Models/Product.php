@@ -11,12 +11,18 @@ class Product extends Model
 
     protected $fillable = [
         'name',
+        'user_id',
         'category_id',
         'platform_id',
         'render_id',
         'color_id',
         'material_id',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function category()
     {

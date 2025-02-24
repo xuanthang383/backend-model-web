@@ -38,11 +38,11 @@ class LibraryController extends BaseController
      * POST /api/libraries
      */
     public function addModelToLibrary(Request $request, $libraryId)
-    {   
+    {
         $userId = Auth::id();
         // Kiểm tra thư viện có thuộc về người dùng hiện tại không
         $library = Library::where('user_id', $userId)->findOrFail($libraryId);
-        if(!$library) {
+        if (!$library) {
             return $this->errorResponse($library, 'Library does not exist');
         }
         // Validate dữ liệu, đảm bảo product_id tồn tại
@@ -73,18 +73,20 @@ class LibraryController extends BaseController
     public function show($id)
     {
         $userId = Auth::id(); // Nếu Auth::id() null thì dùng 1 (hoặc có thể xử lý khác)
-        
-        // Lấy thư viện theo id và user_id
-        $library = Library::where('user_id', $userId)->find($id);
-    
-        // Nếu không tìm thấy thư viện, trả về lỗi
+        $userId = Auth::id() ?? 2;
+        // Lấy library của user hiện tại, đồng thời chỉ nạp các product do user đó tạo
+        // Lấy library của user hiện tại, nhưng không lọc product theo user_id
+        $library = Library::where('user_id', $userId)
+            ->with('products') // load tất cả các product liên quan mà không có filter
+            ->find($id);
+
         if (!$library) {
-            return $this->errorResponse('Library not found', 404);
+            return $this->errorResponse('Library not found or not owned by you', 404);
         }
-    
+
         return $this->successResponse($library, 'Library details');
     }
-    
+
 
     /**
      * Cập nhật thông tin 1 thư viện (tuỳ chọn).
