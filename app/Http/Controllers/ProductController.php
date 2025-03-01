@@ -17,32 +17,48 @@ class ProductController extends BaseController
     public function index(Request $request)
     {
         $query = Product::query()->with(['files' => function ($query) {
-            $query->select('files.id', 'files.file_path', 'pf.product_id', 'pf.is_thumbnail')
-                ->join('product_files as pf', 'files.id', '=', 'pf.file_id') // Join bảng trung gian
-                ->where('pf.is_thumbnail', true); // Chỉ lấy ảnh thumbnail
+            $query->wherePivot('is_thumbnail', true);
         }]);
 
-        if ($request->has(('name'))) {
+        // Lọc theo tên sản phẩm (nếu có)
+        if ($request->has('name')) {
             $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
         }
 
+        // Lọc theo category_id (nếu có)
         if ($request->has('category_id')) {
             $query->where('category_id', $request->query('category_id'));
         }
 
-        return $this->paginateResponse($query, $request, "Success", function ($product) {
-            // Lấy file có `is_thumbnail = true`
-            $thumbnailFile = $product->files->first();
+        // Lọc theo is_private: nếu is_private = 1 thì chỉ lấy sản phẩm có public = 0 hoặc public IS NULL
+        if ($request->query('is_private') == 1) {
+            $query->where(function ($q) {
+                $q->where('public', 0)->orWhereNull('public');
+            });
+        }
 
-            // Gán chỉ `thumbnail` vào response
+        // Lọc theo điều kiện "saved" (chỉ lấy sản phẩm của user và nằm trong bảng library_product)
+        if ($request->boolean('is_saved')) {
+            $userId = auth()->id()?:2; // Lấy ID của user hiện tại
+
+            $query->where('user_id', $userId)
+                ->whereIn('id', function ($subQuery) {
+                    $subQuery->select('product_id')
+                        ->from('library_product'); // Kiểm tra product_id có trong library_product
+                });
+        }
+
+        return $this->paginateResponse($query, $request, "Success", function ($product) {
+            // Lấy ảnh thumbnail (nếu có)
+            $thumbnailFile = $product->files->first();
             $product->thumbnail = $thumbnailFile ? $thumbnailFile->file_path : null;
 
-            // Xóa các trường không cần thiết
-            unset($product->files);
-
+            unset($product->files); // Xóa danh sách files để response gọn hơn
             return $product;
         });
     }
+
+
 
 
     public function show($id)
@@ -157,7 +173,8 @@ class ProductController extends BaseController
             'category_id' => $request->category_id,
             'platform_id' => $request->platform_id,
             'render_id' => $request->render_id,
-            'user_id'=> $uploadedBy
+            'user_id'=> $uploadedBy,
+            'public'=>$request->public?:0
         ]);
 
         // 🛑 Lưu Colors vào bảng `product_colors`

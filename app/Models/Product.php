@@ -17,6 +17,7 @@ class Product extends Model
         'render_id',
         'color_id',
         'material_id',
+        'public'
     ];
 
     public function user()
@@ -51,8 +52,10 @@ class Product extends Model
 
     public function files()
     {
-        return $this->hasManyThrough(File::class, ProductFiles::class, 'product_id', 'id', 'id', 'file_id');
+        return $this->belongsToMany(File::class, 'product_files', 'product_id', 'file_id')
+            ->withPivot('is_thumbnail'); // Thêm trường từ bảng trung gian
     }
+
 
 
     public function tags()
@@ -63,5 +66,12 @@ class Product extends Model
     public function libraries()
     {
         return $this->belongsToMany(Library::class, 'library_product', 'product_id', 'library_id');
+    }
+
+    public function thumbnail()
+    {
+        return $this->belongsToMany(File::class, 'product_files', 'product_id', 'file_id')
+            ->wherePivot('is_thumbnail', true)
+            ->limit(1);
     }
 }
