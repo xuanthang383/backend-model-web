@@ -31,7 +31,7 @@ class ProductController extends BaseController
         }
 
         // Lọc theo is_private: nếu is_private = 1 thì chỉ lấy sản phẩm có public = 0 hoặc public IS NULL
-        if ($request->query('is_private') == 1) {
+        if ($request->boolean('is_private')) {
             $query->where(function ($q) {
                 $q->where('public', 0)->orWhereNull('public');
             });
