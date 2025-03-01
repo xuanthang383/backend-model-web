@@ -22,6 +22,14 @@ class ProductController extends BaseController
                 ->where('pf.is_thumbnail', true); // Chỉ lấy ảnh thumbnail
         }]);
 
+        if ($request->has(('name'))) {
+            $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->query('category_id'));
+        }
+
         return $this->paginateResponse($query, $request, "Success", function ($product) {
             // Lấy file có `is_thumbnail = true`
             $thumbnailFile = $product->files->first();
@@ -149,6 +157,7 @@ class ProductController extends BaseController
             'category_id' => $request->category_id,
             'platform_id' => $request->platform_id,
             'render_id' => $request->render_id,
+            'user_id'=> $uploadedBy
         ]);
 
         // 🛑 Lưu Colors vào bảng `product_colors`
@@ -168,7 +177,7 @@ class ProductController extends BaseController
         // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
         $fileRecord = File::create([
             'file_name' => $relativeFileName,
-            'file_path' => env('URL_IMAGE').$relativeFilePath,
+            'file_path' => env('URL_IMAGE') . $relativeFilePath,
             'uploaded_by' => $uploadedBy
         ]);
 
@@ -197,7 +206,7 @@ class ProductController extends BaseController
 
                 $imageRecord = File::create([
                     'file_name' => $relativeImgName,
-                    'file_path' => env('URL_IMAGE').$relativeImgPath,
+                    'file_path' => env('URL_IMAGE') . $relativeImgPath,
                     'uploaded_by' => $uploadedBy
                 ]);
 
