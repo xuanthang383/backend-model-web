@@ -20,6 +20,14 @@ class ProductController extends BaseController
                 ->where('pf.is_thumbnail', true); // Chỉ lấy ảnh thumbnail
         }]);
 
+        if ($request->has(('name'))) {
+            $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->query('category_id'));
+        }
+
         return $this->paginateResponse($query, $request, "Success", function ($product) {
             // Lấy file có `is_thumbnail = true`
             $thumbnailFile = $product->files->first();
@@ -112,6 +120,7 @@ class ProductController extends BaseController
             'category_id' => $validatedData->category_id,
             'platform_id' => $validatedData->platform_id,
             'render_id' => $validatedData->render_id,
+            'user_id'=> $uploadedBy
         ]);
 
         // 🛑 Lưu Colors vào bảng `product_colors`
