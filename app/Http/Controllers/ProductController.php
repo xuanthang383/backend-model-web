@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Product\ChangeStatusRequest;
+use App\Http\Requests\Product\StoreProductRequest;
 use App\Jobs\UploadFileToS3;
 use App\Models\File;
 use App\Models\Product;
 use App\Models\ProductFiles;
-use App\Models\ProductColor;
-use App\Models\ProductMaterial;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class ProductController extends BaseController
@@ -57,8 +56,6 @@ class ProductController extends BaseController
             return $product;
         });
     }
-
-
 
 
     public function show($id)
@@ -121,85 +118,48 @@ class ProductController extends BaseController
         ]);
     }
 
-
-
-
-
-
-
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|unique:products,name',
-            'category_id' => 'required|integer|exists:categories,id',
-            'platform_id' => 'nullable|integer|exists:platforms,id',
-            'render_id' => 'nullable|integer|exists:renders,id',
-            'file_url' => ['required', 'url', function ($attribute, $value, $fail) {
-                if (!preg_match('/\.(rar|zip)$/i', $value)) {
-                    $fail('The file_url must be a valid RAR or ZIP file.');
-                }
-            }],
-            'image_urls' => 'nullable|array',
-            'image_urls.*' => ['required', 'url', function ($attribute, $value, $fail) {
-                if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value)) {
-                    $fail('Each image must be a valid image URL (jpg, jpeg, png, gif, webp).');
-                }
-            }],
-            // 'image_urls.*' => ['url'],
-            'color_ids' => 'nullable|array',
-            'color_ids.*' => 'integer|exists:colors,id',
-            'material_ids' => 'nullable|array',
-            'material_ids.*' => 'integer|exists:materials,id',
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'integer|exists:tags,id'
-        ]);
-        $request->validate([
-            'image_urls' => 'nullable|array',
+        $validatedData = $request->validated();
 
-        ]);
-
-        $uploadedBy = Auth::id() ?? 1;
-        $filesToInsert = [];
-
-        // 🛑 Xử lý `file_url` (model file)
-        $filePath = parse_url($request->file_url, PHP_URL_PATH);
-        $relativeFilePath = str_replace('/storage/temp/', '', $filePath);
-        $relativeFileName = str_replace('/storage/temp/models/', '', $filePath);
+        $uploadedBy = Auth::id();
 
         // 🛑 Tạo Product mới Ubuntu
         //WSL integration with distro 'Ubuntu' unexpectedly stopped. Do you want to restart it?
         $product = Product::create([
-            'name' => $request->name,
-            'category_id' => $request->category_id,
-            'platform_id' => $request->platform_id,
-            'render_id' => $request->render_id,
-            'user_id'=> $uploadedBy,
-            'public'=>$request->public?:0
+            'name' => $validatedData->name,
+            'category_id' => $validatedData->category_id,
+            'platform_id' => $validatedData->platform_id,
+            'render_id' => $validatedData->render_id,
+            'status' => Product::STATUS_DRAFT,
+            'user_id' => $uploadedBy,
+            'public'=>$request->public
         ]);
 
         // 🛑 Lưu Colors vào bảng `product_colors`
-        if (!empty($request->color_ids)) {
-            $product->colors()->attach($request->color_ids);
+        if (!empty($validatedData->color_ids)) {
+            $product->colors()->attach($validatedData->color_ids);
         }
-
         // 🛑 Lưu Materials vào bảng `product_materials`
-        if (!empty($request->material_ids)) {
-            $product->materials()->attach($request->material_ids);
+        if (!empty($validatedData->material_ids)) {
+            $product->materials()->attach($validatedData->material_ids);
         }
         // 🛑 Lưu Tags vào bảng `product_tags`
-        if (!empty($request->tag_ids)) {
-            $product->tags()->attach($request->tag_ids);
+        if (!empty($validatedData->tag_ids)) {
+            $product->tags()->attach($validatedData->tag_ids);
         }
 
         // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
+        // 🛑 Xử lý `file_url` (model file)
+        $fileName = basename($validatedData->file_url);
         $fileRecord = File::create([
-            'file_name' => $relativeFileName,
-            'file_path' => env('URL_IMAGE') . $relativeFilePath,
+            'file_name' => $fileName,
+            'file_path' => config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
             'uploaded_by' => $uploadedBy
         ]);
 
         // 🔥 Đẩy lên queue để upload lên S3
-        dispatch(new UploadFileToS3($fileRecord->id, $request->file_url, 'models'));
+        dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models'));
 
         ProductFiles::create([
             'file_id' => $fileRecord->id,
@@ -207,56 +167,50 @@ class ProductController extends BaseController
             'is_model' => true
         ]);
 
-        $filesToInsert[] = $fileRecord;
-
-        // 🔥 Xử lý danh sách `image_urls`
-        $imagePaths = [];
-
-        if (!empty($request->image_urls) && is_array($request->image_urls)) {
-            $imageUrls = array_values($request->image_urls);
+        if (!empty($validatedData->image_urls) && is_array($validatedData->image_urls)) {
+            $imageUrls = array_values($validatedData->image_urls);
 
             foreach ($imageUrls as $key => $imageUrl) {
-
-                $imgPath = parse_url($imageUrl, PHP_URL_PATH);
-                $relativeImgPath = str_replace('/storage/temp/', '', $imgPath);
-                $relativeImgName = str_replace('/storage/temp/images/', '', $imgPath);
-
+                $imgName = basename($imageUrl);
                 $imageRecord = File::create([
-                    'file_name' => $relativeImgName,
-                    'file_path' => env('URL_IMAGE') . $relativeImgPath,
+                    'file_name' => $imgName,
+                    'file_path' => config("app.file_path") . File::IMAGE_FILE_PATH . $imgName,
                     'uploaded_by' => $uploadedBy
                 ]);
 
                 dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
 
-                $dataInsert = [
+                ProductFiles::create([
                     'file_id' => $imageRecord->id,
                     'product_id' => $product->id,
-                ];
-
-                if ($key == 0) {
-                    $dataInsert['is_thumbnail'] = true;
-                }
-
-                ProductFiles::create($dataInsert);
-
-                $filesToInsert[] = $imageRecord;
-                $imagePaths[] = $relativeImgPath;
+                    'is_thumbnail' => $key == 0,
+                ]);
             }
         }
 
-        // 🛑 Cập nhật ảnh đại diện cho product từ danh sách `image_urls`
-        if (!empty($imagePaths)) {
-            $product->update(['image_path' => $imagePaths[0]]);
+        return $this->successResponse(
+            ['product' => $product->load('colors', 'materials', 'tags')],
+            'Product created successfully with colors, materials, and tags',
+            201
+        );
+    }
+
+    public function changeStatus(ChangeStatusRequest $request, $id)
+    {
+        $requestValidate = $request->validated();
+
+        $product = Product::find($id);
+
+        if (!$product) {
+            return $this->errorResponse('Product not found', 404);
         }
 
-        return response()->json([
-            'r' => 0,
-            'msg' => 'Product created successfully with colors, materials, and tags',
-            'data' => [
-                'product' => $product->load('colors', 'materials', 'tags'),
-                'files' => $filesToInsert
-            ]
-        ], 201);
+        $product['status'] = $requestValidate->status;
+        $product->save();
+
+        return $this->successResponse(
+            ['product' => $product],
+            'Product status updated successfully'
+        );
     }
 }
