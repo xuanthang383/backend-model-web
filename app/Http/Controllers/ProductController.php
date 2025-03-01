@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\Product\ChangeStatusRequest;
+use App\Http\Requests\Product\StoreProductRequest;
 use App\Jobs\UploadFileToS3;
 use App\Models\File;
 use App\Models\Product;
@@ -108,10 +109,6 @@ class ProductController extends BaseController
         $validatedData = $request->validated();
 
         $uploadedBy = Auth::id();
-        $filesToInsert = [];
-
-        // 🛑 Xử lý `file_url` (model file)
-        $fileName = basename($validatedData->file_url);
 
         // 🛑 Tạo Product mới Ubuntu
         //WSL integration with distro 'Ubuntu' unexpectedly stopped. Do you want to restart it?
@@ -120,14 +117,14 @@ class ProductController extends BaseController
             'category_id' => $validatedData->category_id,
             'platform_id' => $validatedData->platform_id,
             'render_id' => $validatedData->render_id,
-            'user_id'=> $uploadedBy
+            'status' => Product::STATUS_DRAFT,
+            'user_id' => $uploadedBy
         ]);
 
         // 🛑 Lưu Colors vào bảng `product_colors`
         if (!empty($validatedData->color_ids)) {
             $product->colors()->attach($validatedData->color_ids);
         }
-
         // 🛑 Lưu Materials vào bảng `product_materials`
         if (!empty($validatedData->material_ids)) {
             $product->materials()->attach($validatedData->material_ids);
@@ -138,9 +135,11 @@ class ProductController extends BaseController
         }
 
         // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
+        // 🛑 Xử lý `file_url` (model file)
+        $fileName = basename($validatedData->file_url);
         $fileRecord = File::create([
             'file_name' => $fileName,
-            'file_path' => config('app.file_path') . File::$MODEL_FILE_PATH . $fileName,
+            'file_path' => config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
             'uploaded_by' => $uploadedBy
         ]);
 
@@ -157,35 +156,46 @@ class ProductController extends BaseController
             $imageUrls = array_values($validatedData->image_urls);
 
             foreach ($imageUrls as $key => $imageUrl) {
-
                 $imgName = basename($imageUrl);
                 $imageRecord = File::create([
                     'file_name' => $imgName,
-                    'file_path' => config("app.file_path") . File::$IMAGE_FILE_PATH . $imgName,
+                    'file_path' => config("app.file_path") . File::IMAGE_FILE_PATH . $imgName,
                     'uploaded_by' => $uploadedBy
                 ]);
 
                 dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
 
-                $dataInsert = [
+                ProductFiles::create([
                     'file_id' => $imageRecord->id,
                     'product_id' => $product->id,
-                ];
-
-                if ($key == 0) {
-                    $dataInsert['is_thumbnail'] = true;
-                }
-
-                ProductFiles::create($dataInsert);
+                    'is_thumbnail' => $key == 0,
+                ]);
             }
         }
 
-        return response()->json([
-            'r' => 0,
-            'msg' => 'Product created successfully with colors, materials, and tags',
-            'data' => [
-                'product' => $product->load('colors', 'materials', 'tags'),
-            ]
-        ], 201);
+        return $this->successResponse(
+            ['product' => $product->load('colors', 'materials', 'tags')],
+            'Product created successfully with colors, materials, and tags',
+            201
+        );
+    }
+
+    public function changeStatus(ChangeStatusRequest $request, $id)
+    {
+        $requestValidate = $request->validated();
+
+        $product = Product::find($id);
+
+        if (!$product) {
+            return $this->errorResponse('Product not found', 404);
+        }
+
+        $product['status'] = $requestValidate->status;
+        $product->save();
+
+        return $this->successResponse(
+            ['product' => $product],
+            'Product status updated successfully'
+        );
     }
 }

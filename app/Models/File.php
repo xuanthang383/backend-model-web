@@ -14,8 +14,8 @@ class File extends Model
 
     protected $fillable = ['id', 'file_name', 'file_path'];
 
-    public static string $MODEL_FILE_PATH = '/models';
-    public static string $IMAGE_FILE_PATH = '/images';
+    public const MODEL_FILE_PATH = '/models';
+    public const IMAGE_FILE_PATH = '/images';
 
     public function product()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class BaseController extends Controller
@@ -9,8 +10,8 @@ class BaseController extends Controller
     public function paginateResponse($query, Request $request, $message = "Success", callable $callback = null)
     {
         // Lấy số lượng bản ghi trên mỗi trang, mặc định là 10
-        $limit = (int) $request->input('limit', 10);
-        $page = (int) $request->input('page', 1);
+        $limit = (int)$request->input('limit', 10);
+        $page = (int)$request->input('page', 1);
         $limit = ($limit > 0) ? $limit : 10; // Đảm bảo `limit` hợp lệ
 
         // Kiểm tra nếu có yêu cầu sắp xếp dữ liệu
@@ -42,22 +43,26 @@ class BaseController extends Controller
         ]);
     }
 
-
-
-
-    public function successResponse($data, $message = "Success")
+    /**
+     * @param $data mixed
+     * @param string|null $message string
+     * @param int|null $code numeric
+     * @param int|null $r numeric
+     * @return JsonResponse
+     */
+    public function successResponse(mixed $data, string|null $message = "Success", int|null $code = 200, int|null $r = 0)
     {
         return response()->json([
-            'r' => 0,
+            'r' => $r,
             'msg' => $message,
             'data' => $data
-        ]);
+        ], $code);
     }
 
-    public function errorResponse($message = "Error", $code = 400)
+    public function errorResponse($message = "Error", $code = 500, $r = 1)
     {
         return response()->json([
-            'r' => 1,
+            'r' => $r,
             'msg' => $message,
             'data' => null
         ], $code);
