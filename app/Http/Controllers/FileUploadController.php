@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class FileUploadController extends Controller
 {
@@ -15,7 +13,7 @@ class FileUploadController extends Controller
     private function storeTempFile($file, $folder)
     {
         try {
-            $fileName = time().preg_replace('/\s+/', '', $file->getClientOriginalName());
+            $fileName = time() . "_" . preg_replace('/\s+/', '', $file->getClientOriginalName());
             // $fileName = time() . "_" . $file->getClientOriginalName();
             $filePath = $file->storeAs("temp/{$folder}", $fileName, 'public');
 

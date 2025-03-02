@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,11 +12,37 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @mixin  Builder
+ * @property int $id
+ * @property string $name
+ * @property int $category_id
+ * @property int|null $platform_id
+ * @property int|null $render_id
+ * @property int $user_id
+ * @property string $status
+ * @property-read Category $category
+ * @property-read Platform|null $platform
+ * @property-read Render|null $render
+ * @property-read User $user
+ * @property-read Collection|Color[] $colors
+ * @property-read int|null $colors_count
+ * @property-read Collection|Material[] $materials
+ * @property-read int|null $materials_count
+ * @property-read Collection|File[] $files
+ * @property-read int|null $files_count
+ * @property-read Collection|Tag[] $tags
+ * @property-read int|null $tags_count
+ * @property-read Collection|Library[] $libraries
+ * @property-read int|null $libraries_count
+ * @property-read Collection|ProductFiles[] $productFiles
+ * @property-read int|null $product_files_count
  */
 class Product extends Model
 {
     use HasFactory;
 
+    /**
+     * @var \Illuminate\Support\HigherOrderCollectionProxy|mixed
+     */
     protected $fillable = [
         'name',
         'user_id',
