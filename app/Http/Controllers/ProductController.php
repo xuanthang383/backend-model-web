@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\Product\ChangeStatusDTO;
+use App\DTO\Product\CreateDTO;
+use App\DTO\Product\UpdateDTO;
+use App\Http\Requests\Product\ChangeStatusRequest;
+use App\Http\Requests\Product\StoreProductRequest;
+use App\Http\Requests\Product\UpdateProductRequest;
 use App\Jobs\UploadFileToS3;
 use App\Models\File;
 use App\Models\Product;
 use App\Models\ProductFiles;
-use App\Models\ProductColor;
-use App\Models\ProductMaterial;
+use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class ProductController extends BaseController
@@ -39,7 +43,7 @@ class ProductController extends BaseController
 
         // Lọc theo điều kiện "saved" (chỉ lấy sản phẩm của user và nằm trong bảng library_product)
         if ($request->boolean('is_saved')) {
-            $userId = auth()->id()?:2; // Lấy ID của user hiện tại
+            $userId = auth()->id() ?: 2; // Lấy ID của user hiện tại
 
             $query->where('user_id', $userId)
                 ->whereIn('id', function ($subQuery) {
@@ -58,9 +62,6 @@ class ProductController extends BaseController
         });
     }
 
-
-
-
     public function show($id)
     {
         $product = Product::with(['category', 'tags', 'files', 'platform', 'render'])->find($id);
@@ -70,7 +71,8 @@ class ProductController extends BaseController
         }
 
         // Lấy tất cả `file_path` từ `product_files` và `files`
-        $allFiles = File::whereIn('id', ProductFiles::where('product_id', $id)->pluck('file_id'))
+        $allFiles = File::whereIn('id', ProductFiles::where('product_id', $id)
+            ->pluck('file_id'))
             ->pluck('file_path')
             ->map(function ($filePath) {
                 return $filePath;
@@ -121,142 +123,248 @@ class ProductController extends BaseController
         ]);
     }
 
-
-
-
-
-
-
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|unique:products,name',
-            'category_id' => 'required|integer|exists:categories,id',
-            'platform_id' => 'nullable|integer|exists:platforms,id',
-            'render_id' => 'nullable|integer|exists:renders,id',
-            'file_url' => ['required', 'url', function ($attribute, $value, $fail) {
-                if (!preg_match('/\.(rar|zip)$/i', $value)) {
-                    $fail('The file_url must be a valid RAR or ZIP file.');
+        try {
+            $validatedData = new CreateDTO($request->validated());
+
+            $uploadedBy = Auth::id();
+
+            // 🛑 Tạo Product mới Ubuntu
+            //WSL integration with distro 'Ubuntu' unexpectedly stopped. Do you want to restart it?
+            $product = Product::create([
+                'name' => $validatedData->name,
+                'category_id' => $validatedData->category_id,
+                'platform_id' => $validatedData->platform_id,
+                'render_id' => $validatedData->render_id,
+                'status' => Product::STATUS_DRAFT,
+                'user_id' => $uploadedBy,
+                'public' => $validatedData->public ?: 0
+            ]);
+
+            // 🛑 Lưu Colors vào bảng `product_colors`
+            if (!empty($validatedData->color_ids)) {
+                $product->colors()->attach($validatedData->color_ids);
+            }
+            // 🛑 Lưu Materials vào bảng `product_materials`
+            if (!empty($validatedData->material_ids)) {
+                $product->materials()->attach($validatedData->material_ids);
+            }
+            // 🛑 Lưu Tags vào bảng `product_tags`
+            if (!empty($validatedData->tag_ids)) {
+                $product->tags()->attach($validatedData->tag_ids);
+            }
+
+            // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
+            // 🛑 Xử lý `file_url` (model file)
+            $fileName = basename($validatedData->file_url);
+            $fileRecord = File::create([
+                'file_name' => $fileName,
+                'file_path' => config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
+                'uploaded_by' => $uploadedBy
+            ]);
+
+            // 🔥 Đẩy lên queue để upload lên S3
+            dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models'));
+
+            ProductFiles::create([
+                'file_id' => $fileRecord->id,
+                'product_id' => $product->id,
+                'is_model' => true
+            ]);
+
+            if (!empty($validatedData->image_urls) && is_array($validatedData->image_urls)) {
+                $imageUrls = array_values($validatedData->image_urls);
+
+                foreach ($imageUrls as $key => $imageUrl) {
+                    $imgName = basename($imageUrl);
+                    $imageRecord = File::create([
+                        'file_name' => $imgName,
+                        'file_path' => config("app.file_path") . File::IMAGE_FILE_PATH . $imgName,
+                        'uploaded_by' => $uploadedBy
+                    ]);
+
+                    dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+
+                    ProductFiles::create([
+                        'file_id' => $imageRecord->id,
+                        'product_id' => $product->id,
+                        'is_thumbnail' => $key == 0,
+                    ]);
                 }
-            }],
-            'image_urls' => 'nullable|array',
-            'image_urls.*' => ['required', 'url', function ($attribute, $value, $fail) {
-                if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value)) {
-                    $fail('Each image must be a valid image URL (jpg, jpeg, png, gif, webp).');
+            }
+
+            return $this->successResponse(
+                ['product' => $product->load('colors', 'materials', 'tags')],
+                'Product created successfully with colors, materials, and tags',
+                201
+            );
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    public function changeStatus(ChangeStatusRequest $request, $id)
+    {
+        try {
+            $requestValidate = new ChangeStatusDTO($request->validated());
+
+            $product = Product::find($id);
+
+            if (!$product) {
+                return $this->errorResponse('Product not found', 404);
+            }
+
+            $product['status'] = $requestValidate->status;
+            $product->save();
+
+            return $this->successResponse(
+                ['product' => $product],
+                'Product status updated successfully'
+            );
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    /*
+     * Check phân quyền
+     */
+    public function update(UpdateProductRequest $request, $id)
+    {
+        try {
+            $uploadedBy = Auth::id();
+
+            $validateData = new UpdateDTO($request->validated());
+            $product = Product::findOrFail($id);
+
+            if ($product["user_id"] !== $uploadedBy) {
+                return $this->errorResponse('Unauthorized action.', 403);
+            }
+
+            $product->update([
+                'name' => $validateData->name,
+                'category_id' => $validateData->category_id ?? null,
+                'platform_id' => $validateData->platform_id ?? null,
+                'render_id' => $validateData->render_id ?? null,
+//                'file_url' => $validateData->file_url ?? null,
+            ]);
+
+            $product->colors()->sync($validateData->color_ids ?? []);
+            $product->materials()->sync($validateData->material_ids ?? []);
+            $product->tags()->sync($validateData->tag_ids ?? []);
+
+            /*
+             * Cập nhật file model
+             */
+            $fileName = basename($validateData->file_url);
+
+            // 🛑 Tìm file cũ của sản phẩm
+            $oldProductFile = ProductFiles::where('product_id', $product->id)
+                ->where('is_model', true)
+                ->first();
+            if (!$oldProductFile || $validateData->file_url != $oldProductFile->file->file_path) {
+                if ($oldProductFile) {
+                    // 🛑 Xóa file cũ khỏi DB
+                    // File::where('id', $oldProductFile->file_id)->delete();
+                    // 🛑 Xóa product file mapping
+                    $oldProductFile->delete();
                 }
-            }],
-            // 'image_urls.*' => ['url'],
-            'color_ids' => 'nullable|array',
-            'color_ids.*' => 'integer|exists:colors,id',
-            'material_ids' => 'nullable|array',
-            'material_ids.*' => 'integer|exists:materials,id',
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'integer|exists:tags,id'
-        ]);
-        $request->validate([
-            'image_urls' => 'nullable|array',
 
-        ]);
-
-        $uploadedBy = Auth::id() ?? 1;
-        $filesToInsert = [];
-
-        // 🛑 Xử lý `file_url` (model file)
-        $filePath = parse_url($request->file_url, PHP_URL_PATH);
-        $relativeFilePath = str_replace('/storage/temp/', '', $filePath);
-        $relativeFileName = str_replace('/storage/temp/models/', '', $filePath);
-
-        // 🛑 Tạo Product mới Ubuntu
-        //WSL integration with distro 'Ubuntu' unexpectedly stopped. Do you want to restart it?
-        $product = Product::create([
-            'name' => $request->name,
-            'category_id' => $request->category_id,
-            'platform_id' => $request->platform_id,
-            'render_id' => $request->render_id,
-            'user_id'=> $uploadedBy,
-            'public'=>$request->public?:0
-        ]);
-
-        // 🛑 Lưu Colors vào bảng `product_colors`
-        if (!empty($request->color_ids)) {
-            $product->colors()->attach($request->color_ids);
-        }
-
-        // 🛑 Lưu Materials vào bảng `product_materials`
-        if (!empty($request->material_ids)) {
-            $product->materials()->attach($request->material_ids);
-        }
-        // 🛑 Lưu Tags vào bảng `product_tags`
-        if (!empty($request->tag_ids)) {
-            $product->tags()->attach($request->tag_ids);
-        }
-
-        // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
-        $fileRecord = File::create([
-            'file_name' => $relativeFileName,
-            'file_path' => env('URL_IMAGE') . $relativeFilePath,
-            'uploaded_by' => $uploadedBy
-        ]);
-
-        // 🔥 Đẩy lên queue để upload lên S3
-        dispatch(new UploadFileToS3($fileRecord->id, $request->file_url, 'models'));
-
-        ProductFiles::create([
-            'file_id' => $fileRecord->id,
-            'product_id' => $product->id,
-            'is_model' => true
-        ]);
-
-        $filesToInsert[] = $fileRecord;
-
-        // 🔥 Xử lý danh sách `image_urls`
-        $imagePaths = [];
-
-        if (!empty($request->image_urls) && is_array($request->image_urls)) {
-            $imageUrls = array_values($request->image_urls);
-
-            foreach ($imageUrls as $key => $imageUrl) {
-
-                $imgPath = parse_url($imageUrl, PHP_URL_PATH);
-                $relativeImgPath = str_replace('/storage/temp/', '', $imgPath);
-                $relativeImgName = str_replace('/storage/temp/images/', '', $imgPath);
-
-                $imageRecord = File::create([
-                    'file_name' => $relativeImgName,
-                    'file_path' => env('URL_IMAGE') . $relativeImgPath,
+                // 🛑 Tạo file mới trong DB trước khi upload lên S3
+                $fileRecord = File::create([
+                    'file_name' => $fileName,
+                    'file_path' => config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
                     'uploaded_by' => $uploadedBy
                 ]);
 
-                dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+                // 🔥 Đẩy lên queue để upload lên S3
+                dispatch(new UploadFileToS3($fileRecord->id, $validateData->file_url, 'models'));
 
-                $dataInsert = [
-                    'file_id' => $imageRecord->id,
+                // 🛑 Lưu file mới vào bảng product_files
+                ProductFiles::create([
+                    'file_id' => $fileRecord->id,
                     'product_id' => $product->id,
-                ];
+                    'is_model' => true
+                ]);
+            }
 
-                if ($key == 0) {
-                    $dataInsert['is_thumbnail'] = true;
+            if (!empty($validateData->image_urls) && is_array($validateData->image_urls)) {
+                $imageUrls = array_values($validateData->image_urls);
+                $newThumbnail = $imageUrls[0] ?? null;
+
+                // 🛑 Lấy danh sách ảnh cũ của sản phẩm
+                $oldProductImages = ProductFiles::where('product_id', $product->id)
+                    ->whereNull('is_model')->orWhere('is_model', false)
+                    ->get();
+
+                $oldThumbnail = null;
+                $existingImageUrls = $oldProductImages->map(function ($image) use (&$oldThumbnail) {
+                    if ($image->is_thumbnail) {
+                        $oldThumbnail = $image;
+                    }
+                    return $image->file->file_path;
+                })->toArray();
+
+                $newThumbnailFileId = null; // Lưu ID ảnh mới nếu cần thay đổi thumbnail
+                // 🛑 Duyệt qua danh sách ảnh mới
+                foreach ($imageUrls as $key => $imageUrl) {
+                    $imgName = basename($imageUrl);
+                    $filePath = config("app.file_path") . File::IMAGE_FILE_PATH . $imgName;
+
+                    // 🛑 Kiểm tra xem ảnh có phải là ảnh mới hay không
+                    if (!in_array($filePath, $existingImageUrls)) {
+                        // 🛑 Nếu là ảnh mới, tạo bản ghi mới
+                        $imageRecord = File::create([
+                            'file_name' => $imgName,
+                            'file_path' => $filePath,
+                            'uploaded_by' => $uploadedBy
+                        ]);
+
+                        // 🔥 Đẩy lên queue để upload lên S3
+//                        dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+
+                        // 🛑 Lưu file mới vào bảng product_files
+                        $productFile = ProductFiles::create([
+                            'file_id' => $imageRecord->id,
+                            'product_id' => $product->id,
+                            'is_thumbnail' => false, // Đặt false, sau này mới cập nhật thumbnail nếu cần
+                        ]);
+
+                        // Lưu lại file_id của ảnh đầu tiên để cập nhật thumbnail nếu cần
+                        if ($key == 0) {
+                            $newThumbnailFileId = $productFile->file_id;
+                        }
+                    }
                 }
 
-                ProductFiles::create($dataInsert);
+                // 🛑 Cập nhật ảnh thumbnail nếu cần
+                if ($newThumbnailFileId && $oldThumbnail?->file->file_path !== $newThumbnail) {
+                    // Nếu thumbnail cũ khác với ảnh đầu tiên mới, cập nhật lại thumbnail
+                    ProductFiles::where('product_id', $product->id)
+                        ->where('is_thumbnail', true)
+                        ->update(['is_thumbnail' => false]);
+                    ProductFiles::where('file_id', $newThumbnailFileId)->update(['is_thumbnail' => true]);
+                }
 
-                $filesToInsert[] = $imageRecord;
-                $imagePaths[] = $relativeImgPath;
+                // 🛑 Xóa ảnh cũ nếu không còn tồn tại trong danh sách ảnh mới
+                foreach ($oldProductImages as $oldImage) {
+                    if (!in_array($oldImage->file->file_path, $imageUrls)) {
+                        ProductFiles::where([
+                            'product_id' => $oldImage->product_id,
+                            'file_id' => $oldImage->file_id
+                        ])->delete();
+                    }
+                }
             }
-        }
 
-        // 🛑 Cập nhật ảnh đại diện cho product từ danh sách `image_urls`
-        if (!empty($imagePaths)) {
-            $product->update(['image_path' => $imagePaths[0]]);
+            return $this->successResponse(
+                ['product' => $product],
+                'Product updated successfully'
+            );
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
         }
-
-        return response()->json([
-            'r' => 0,
-            'msg' => 'Product created successfully with colors, materials, and tags',
-            'data' => [
-                'product' => $product->load('colors', 'materials', 'tags'),
-                'files' => $filesToInsert
-            ]
-        ], 201);
     }
+
 }

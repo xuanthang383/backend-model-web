@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
@@ -12,7 +11,6 @@ use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
-use App\Http\Controllers\TestFileUploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,50 +25,35 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// ✅ API công khai (Không cần auth)
+
+// ✅ API Xác thực (Guest Only)
+Route::middleware('guest')->group(function () {
+    Route::controller(RegisteredUserController::class)->group(function () {
+        Route::post('/register', 'store')->name('api.register');
+    });
+
+    Route::controller(AuthenticatedSessionController::class)->group(function () {
+        Route::post('/login', 'store')->name('api.login');
+        Route::post('/logout', 'destroy');
+    });
+});
+
+Route::get('/libraries', [LibraryController::class, 'index']);
+Route::get('/tags', [TagController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/platforms', [PlatformController::class, 'index']);
 Route::get('/renders', [RenderController::class, 'index']);
-Route::get('/colors', [ColorController::class, 'index']);
 Route::get('/materials', [MaterialController::class, 'index']);
-Route::get('/tags', [TagController::class, 'index']);
+Route::get('/colors', [ColorController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{id}', [ProductController::class, 'show']);
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->middleware('guest');
-// ✅ API xác thực người dùng
-Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('guest')->name('api.register');
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('api.login');
-Route::post('/cate', [CategoryController::class, 'store'])->middleware('guest')->name('api.cate');
-Route::post('/products', [ProductController::class, 'store']);
+
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
-
-    // Tạo mới thư viện
-    Route::post('/libraries', [LibraryController::class, 'storeLibrary']);
-
-    // Thêm model vào thư viện với tham số libraryId
-    Route::post('/libraries/{id}', [LibraryController::class, 'addModelToLibrary']);
-
-    // (Tuỳ chọn) Xem danh sách thư viện của user hiện tại
-    Route::get('/libraries', [LibraryController::class, 'index']);
-
-    // (Tuỳ chọn) Xem chi tiết của 1 thư viện
-    Route::get('/libraries/{id}', [LibraryController::class, 'show']);
-
-    // (Tuỳ chọn) Xem danh sách sản phẩm trong thư viện
-    Route::get('/libraries/product/{id}', [LibraryController::class, 'showProduct']);
-
-    // (Tuỳ chọn) Cập nhật thư viện
-    Route::put('/libraries/{id}', [LibraryController::class, 'updateLibrary']);
-    Route::patch('/libraries/{id}', [LibraryController::class, 'updateLibrary']);
-
-    // (Tuỳ chọn) Xóa thư viện
-    Route::delete('/libraries/{id}', [LibraryController::class, 'destroy']);
 
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
     Route::get('/user-token', function (Request $request) {
         $user = $request->user();
 
@@ -89,14 +72,71 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ]);
     });
 
-    Route::post('/tags', [TagController::class, 'store']);
-    Route::post('/materials', [MaterialController::class, 'store']);
-    Route::post('/platforms', [PlatformController::class, 'store']);
-    Route::post('/renders', [RenderController::class, 'store']);
-    Route::post('/colors', [ColorController::class, 'store']);
-    Route::post('/upload-temp-images', [FileUploadController::class, 'uploadTempImage']);
-    Route::post('/upload-temp-model', [FileUploadController::class, 'uploadTempModel']);
+    Route::controller(LibraryController::class)->prefix("/libraries")->group(function () {
+        Route::post('/', 'storeLibrary');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'updateLibrary');
+        Route::patch('/{id}', 'updateLibrary');
+        Route::delete('/{id}', 'destroy');
 
-    // Tạo mới sản phẩm
-    Route::post('/products', [ProductController::class, 'store']);
+        Route::post('/{id}', 'addModelToLibrary');
+        Route::get('/product/{id}', 'showProduct');
+    });
+
+    Route::controller(TagController::class)->prefix('/tags')->group(function () {
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+
+    Route::controller(CategoryController::class)->prefix('/categories')->group(function () {
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+
+    Route::controller(PlatformController::class)->prefix('/platforms')->group(function () {
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+
+    Route::controller(RenderController::class)->prefix('/renders')->group(function () {
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+
+    Route::controller(MaterialController::class)->prefix('/materials')->group(function () {
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+
+    Route::controller(ColorController::class)->prefix('/colors')->group(function () {
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+
+    Route::controller(ProductController::class)->prefix('/products')->group(function () {
+        // Tạo mới sản phẩm
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+
+        Route::post('/{id}/change-status', 'changeStatus');
+    });
+
+    Route::controller(FileUploadController::class)->group(function () {
+        Route::post('/upload-temp-images', 'uploadTempImage');
+        Route::post('/upload-temp-model', 'uploadTempModel');
+    });
 });

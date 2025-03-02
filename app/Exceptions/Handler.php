@@ -2,9 +2,17 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Validation\ValidationException; // Sửa lại import ở đây
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
+
+// Sửa lại import ở đây
 
 class Handler extends ExceptionHandler
 {
@@ -29,17 +37,41 @@ class Handler extends ExceptionHandler
         });
     }
 
-    public function render($request, Throwable $exception)
+    public function render($request, Throwable $e): Response|JsonResponse|\Symfony\Component\HttpFoundation\Response|RedirectResponse
     {
-        if ($exception instanceof ValidationException) {
-            return response()->json([
-                'r'      => 1, // Mã lỗi của bạn
-                'msg'    => 'Validation error',
-                'errors' => $exception->errors(),
-                'data'   => null,
-            ], 422);
+        if ($request->expectsJson()) {
+            if ($e instanceof ValidationException) {
+                return response()->json([
+                    'r' => 1, // Mã lỗi của bạn
+                    'msg' => 'Validation error',
+                    'errors' => $e->errors(),
+                    'data' => null,
+                ], 500);
+            }
+
+            if ($e instanceof ModelNotFoundException) {
+                return response()->json([
+                    'r' => 1,
+                    'msg' => 'Resource not found'
+                ], 404);
+            }
+
+            if ($e instanceof NotFoundHttpException) {
+                return response()->json([
+                    'r' => 1,
+                    'msg' => 'Invalid API route'
+                ], 404);
+            }
+
+            if ($e instanceof AuthenticationException) {
+                return response()->json([
+                    'r' => 1,
+                    'msg' => 'Unauthorized - Token không hợp lệ hoặc đã hết hạn',
+                    'data' => null
+                ], 401);
+            }
         }
 
-        return parent::render($request, $exception);
+        return parent::render($request, $e);
     }
 }
