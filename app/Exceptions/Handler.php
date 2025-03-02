@@ -2,16 +2,17 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
-
-// Sửa lại import ở đây
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
+
+// Sửa lại import ở đây
 
 class Handler extends ExceptionHandler
 {
@@ -50,16 +51,24 @@ class Handler extends ExceptionHandler
 
             if ($e instanceof ModelNotFoundException) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Resource not found'
+                    'r' => 1,
+                    'msg' => 'Resource not found'
                 ], 404);
             }
 
             if ($e instanceof NotFoundHttpException) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid API route'
+                    'r' => 1,
+                    'msg' => 'Invalid API route'
                 ], 404);
+            }
+
+            if ($e instanceof AuthenticationException) {
+                return response()->json([
+                    'r' => 1,
+                    'msg' => 'Unauthorized - Token không hợp lệ hoặc đã hết hạn',
+                    'data' => null
+                ], 401);
             }
         }
 

@@ -130,6 +130,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
+
+        Route::post('/{id}/change-status', 'changeStatus');
     });
 
     Route::controller(FileUploadController::class)->group(function () {
