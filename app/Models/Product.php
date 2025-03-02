@@ -2,13 +2,19 @@
 
 namespace App\Models;
 
+use App\DTO\Product\CreateDTO;
+use App\Jobs\UploadFileToS3;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HigherOrderCollectionProxy;
+use Throwable;
 
 /**
  * @mixin  Builder
@@ -18,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property int|null $platform_id
  * @property int|null $render_id
  * @property int $user_id
+ * @property bool $public
  * @property string $status
  * @property-read Category $category
  * @property-read Platform|null $platform
@@ -41,7 +48,7 @@ class Product extends Model
     use HasFactory;
 
     /**
-     * @var \Illuminate\Support\HigherOrderCollectionProxy|mixed
+     * @var HigherOrderCollectionProxy|mixed
      */
     protected $fillable = [
         'name',
@@ -121,5 +128,94 @@ class Product extends Model
         return $this->belongsToMany(File::class, 'product_files', 'product_id', 'file_id')
             ->wherePivot('is_thumbnail', true)
             ->limit(1);
+    }
+
+    public function productFiles(): Builder|HasMany|Product
+    {
+        return $this->hasMany(ProductFiles::class, 'product_id');
+    }
+
+    public function createProduct(CreateDTO $validatedData)
+    {
+        try {
+            DB::beginTransaction();
+
+            $uploadedBy = Auth::id();
+
+            $product = Product::create([
+                'name' => $validatedData->name,
+                'category_id' => $validatedData->category_id,
+                'platform_id' => $validatedData->platform_id,
+                'render_id' => $validatedData->render_id,
+                'status' => Product::STATUS_DRAFT,
+                'user_id' => $uploadedBy,
+                'public' => true
+            ]);
+
+            // 🛑 Lưu Colors vào bảng `product_colors`
+            if (!empty($validatedData->color_ids)) {
+                $product->colors()->attach($validatedData->color_ids);
+            }
+            // 🛑 Lưu Materials vào bảng `product_materials`
+            if (!empty($validatedData->material_ids)) {
+                $product->materials()->attach($validatedData->material_ids);
+            }
+            // 🛑 Lưu Tags vào bảng `product_tags`
+            if (!empty($validatedData->tag_ids)) {
+                $product->tags()->attach($validatedData->tag_ids);
+            }
+
+            // 🛑 Lưu file model (`file_url`) vào DB trước khi upload lên S3
+            // 🛑 Xử lý `file_url` (model file)
+            $fileName = basename($validatedData->file_url);
+            $fileRecord = File::create([
+                'file_name' => $fileName,
+                'file_path' => config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
+                'uploaded_by' => $uploadedBy
+            ]);
+
+            // 🔥 Đẩy lên queue để upload lên S3
+            dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models'));
+
+            ProductFiles::create([
+                'file_id' => $fileRecord->id,
+                'product_id' => $product->id,
+                'is_model' => true
+            ]);
+
+            if (!empty($validatedData->image_urls) && is_array($validatedData->image_urls)) {
+                $imageUrls = array_values($validatedData->image_urls);
+
+                foreach ($imageUrls as $key => $imageUrl) {
+                    $imgName = basename($imageUrl);
+                    $imageRecord = File::create([
+                        'file_name' => $imgName,
+                        'file_path' => config("app.file_path") . File::IMAGE_FILE_PATH . $imgName,
+                        'uploaded_by' => $uploadedBy
+                    ]);
+
+                    dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+
+                    ProductFiles::create([
+                        'file_id' => $imageRecord->id,
+                        'product_id' => $product->id,
+                        'is_thumbnail' => $key == 0,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return $product->load('colors', 'materials', 'tags');
+        } catch (Throwable $e) {
+            try {
+                DB::rollBack();
+            } catch (Throwable $e) {
+            }
+            return [
+                "error" => $e,
+                "msg" => $e->getMessage()
+            ];
+        }
     }
 }
