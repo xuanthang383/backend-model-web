@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class RegisteredUserController extends Controller
+class RegisteredUserController extends BaseController
 {
     /**
      * Xử lý đăng ký người dùng mới.
@@ -30,8 +30,6 @@ class RegisteredUserController extends Controller
         // Gửi email xác nhận tài khoản
         $emailService->sendVerificationEmail($user);
 
-        return response()->json([
-            'msg' => 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.'
-        ], 201);
+        return $this->successResponse($request->email, 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.');
     }
 }

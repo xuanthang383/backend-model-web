@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ForgotPasswordController;
@@ -17,7 +19,6 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -32,6 +33,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 // ✅ API Xác thực (Guest Only)
 Route::middleware('guest')->group(function () {
+
     Route::controller(RegisteredUserController::class)->group(function () {
         Route::post('/register', 'store')->name('api.register');
     });
@@ -52,11 +54,17 @@ Route::middleware('guest')->group(function () {
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
 
+Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed'])->name('verification.verify');
+    Route::post('/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware(['throttle:6,1'])->name('verification.send');
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-//    Route::get('/user-token', [UserController::class, 'getUserToken']);
+    //    Route::get('/user-token', [UserController::class, 'getUserToken']);
     Route::controller(UserController::class)->prefix('/user-token')->group(function () {
         Route::get('/', 'index');
     });
