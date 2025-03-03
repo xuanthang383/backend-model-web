@@ -1,8 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\EmailVerificationController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ForgotPasswordController;
@@ -19,6 +17,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -33,7 +32,6 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 // ✅ API Xác thực (Guest Only)
 Route::middleware('guest')->group(function () {
-
     Route::controller(RegisteredUserController::class)->group(function () {
         Route::post('/register', 'store')->name('api.register');
     });
@@ -51,20 +49,23 @@ Route::middleware('guest')->group(function () {
     });
 });
 
+Route::get('/libraries', [LibraryController::class, 'index']);
+Route::get('/tags', [TagController::class, 'index']);
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/platforms', [PlatformController::class, 'index']);
+Route::get('/renders', [RenderController::class, 'index']);
+Route::get('/materials', [MaterialController::class, 'index']);
+Route::get('/colors', [ColorController::class, 'index']);
+Route::get('/products', [ProductController::class, 'index']);
+
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
-
-Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
-    Route::get('/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware(['signed'])->name('verification.verify');
-    Route::post('/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware(['throttle:6,1'])->name('verification.send');
 
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    //    Route::get('/user-token', [UserController::class, 'getUserToken']);
+//    Route::get('/user-token', [UserController::class, 'getUserToken']);
     Route::controller(UserController::class)->prefix('/user-token')->group(function () {
         Route::get('/', 'index');
     });
@@ -83,7 +84,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
 
     Route::controller(TagController::class)->prefix('/tags')->group(function () {
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -91,7 +91,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
 
     Route::controller(CategoryController::class)->prefix('/categories')->group(function () {
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -99,7 +98,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
 
     Route::controller(PlatformController::class)->prefix('/platforms')->group(function () {
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -107,7 +105,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
 
     Route::controller(RenderController::class)->prefix('/renders')->group(function () {
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -115,7 +112,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
 
     Route::controller(MaterialController::class)->prefix('/materials')->group(function () {
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -123,7 +119,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
 
     Route::controller(ColorController::class)->prefix('/colors')->group(function () {
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
@@ -132,7 +127,6 @@ Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('ver
     Route::controller(ProductController::class)->prefix('/products')->group(function () {
         // Tạo mới sản phẩm
         Route::post('/', 'store');
-        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
