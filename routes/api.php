@@ -50,14 +50,18 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-Route::get('/libraries', [LibraryController::class, 'index']);
+//Route::get('/libraries', [LibraryController::class, 'index']);
 Route::get('/tags', [TagController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/platforms', [PlatformController::class, 'index']);
 Route::get('/renders', [RenderController::class, 'index']);
 Route::get('/materials', [MaterialController::class, 'index']);
 Route::get('/colors', [ColorController::class, 'index']);
-Route::get('/products', [ProductController::class, 'index']);
+
+Route::controller(ProductController::class)->prefix('/products')->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{id}', 'show');
+});
 
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -88,7 +92,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', 'destroy');
 
         Route::post('/{id}', 'addModelToLibrary');
-        Route::get('/product/{id}', 'showProduct');
+        Route::get('/{id}/product', 'showProduct');
     });
 
     Route::controller(TagController::class)->prefix('/tags')->group(function () {
@@ -136,7 +140,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(ProductController::class)->prefix('/products')->group(function () {
         // Tạo mới sản phẩm
         Route::post('/', 'store');
-        Route::get('/{id}', 'show');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
 

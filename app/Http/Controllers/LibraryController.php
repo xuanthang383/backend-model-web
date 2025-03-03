@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\Library\LibraryDTO;
+use App\Http\Requests\Library\LibraryRequest;
 use App\Models\Library;
 use App\Models\Product;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,36 +16,42 @@ class LibraryController extends BaseController
      * Liệt kê tất cả các thư viện của user hiện tại (có phân trang).
      * GET /api/libraries
      */
-    public function index()
+    public function index(LibraryRequest $request)
     {
-        $userId = Auth::id();
-        // $userId = Auth::id() ?? 2;
-        $libraries = Library::where('user_id', $userId)->get();
-        return $this->successResponse($libraries, 'List of libraries');
+        try {
+            $validData = new LibraryDTO($request->validated());
+
+            $libraryModel = Library::where('user_id', Auth::id());
+
+            if ($validData->parent_id) {
+                $libraryModel->where('parent_id', $validData->parent_id);
+            } else {
+                $libraryModel->whereNull('parent_id');
+            }
+
+            $libraries = $libraryModel->get();
+            return $this->successResponse($libraries, 'List of libraries');
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
     }
 
     // Show thư viện
     public function show($id)
     {
-        $userId = Auth::id();
-        // $userId = Auth::id() ?? 2;
-
         // Tìm thư viện theo id và đảm bảo thuộc về user hiện tại
-        $library = Library::where('user_id', $userId)
+        $library = Library::where('user_id', Auth::id())
             ->where('id', $id)
+            ->with([
+                "children" => function ($query) {
+                    $query->where("user_id", Auth::id());
+                },
+            ])
             ->first();
 
         if (!$library) {
             return $this->errorResponse('Library not found or not owned by you', 404);
         }
-
-        // Lấy các thư viện con trực tiếp (1 cấp) của thư viện này
-        $children = Library::where('user_id', $userId)
-            ->where('parent_id', $library->id)
-            ->get();
-
-        // Gán danh sách các thư viện con vào thuộc tính children
-        $library->children = $children;
 
         return $this->successResponse($library, 'Library details with one level children');
     }
@@ -52,22 +61,23 @@ class LibraryController extends BaseController
     {
         // Validate dữ liệu đầu vào
         $validatedData = $request->validate([
-            'name'        => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'parent_id'   => 'nullable|integer|exists:libraries,id',
+            'parent_id' => 'nullable|integer|exists:libraries,id',
         ]);
 
         $userId = Auth::id();
         // Tạo mới thư viện
         $library = Library::create([
-            'user_id'     => $userId,
-            'parent_id'   => $validatedData['parent_id'] ?? null,
-            'name'        => $validatedData['name'],
+            'user_id' => $userId,
+            'parent_id' => $validatedData['parent_id'] ?? null,
+            'name' => $validatedData['name'],
             'description' => $validatedData['description'] ?? null,
         ]);
 
         return $this->successResponse($library, 'Library created successfully');
     }
+
     /**
      * Tạo mới một thư viện cho user hiện tại.
      * POST /api/libraries
@@ -106,26 +116,26 @@ class LibraryController extends BaseController
     }
 
 
-
     /**
      * Hiển thị chi tiết 1 thư viện (tuỳ chọn).
      * GET /api/libraries/{id}
      */
     public function showProduct($id)
     {
-        $userId = Auth::id(); // Nếu Auth::id() null thì dùng 1 (hoặc có thể xử lý khác)
-        $userId = Auth::id() ?? 2;
-        // Lấy library của user hiện tại, đồng thời chỉ nạp các product do user đó tạo
-        // Lấy library của user hiện tại, nhưng không lọc product theo user_id
-        $library = Library::where('user_id', $userId)
-            ->with('products') // load tất cả các product liên quan mà không có filter
+        $library = Library::with("products.imageFiles")
             ->find($id);
 
         if (!$library) {
-            return $this->errorResponse('Library not found or not owned by you', 404);
+            return response()->json(['message' => 'Library not found'], 404);
         }
 
-        return $this->successResponse($library, 'Library details');
+        $library->products->each(function ($product) {
+            $product->thumbnail = $product->imageFiles->first(function ($file) {
+                return $file->pivot->is_thumbnail == 1;
+            });
+        });
+
+        return $this->successResponse($library, 'Library details in');
     }
 
 
@@ -135,7 +145,7 @@ class LibraryController extends BaseController
      */
     public function updateLibrary(Request $request, $id)
     {
-        $userId = Auth::id()?:3;
+        $userId = Auth::id() ?: 3;
 
         // Lấy thư viện của user hiện tại
         $library = Library::where('user_id', $userId)->find($id);
@@ -144,9 +154,9 @@ class LibraryController extends BaseController
         }
         // Validate dữ liệu cập nhật
         $validatedData = $request->validate([
-            'name'        => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'parent_id'   => 'nullable|integer|exists:libraries,id',
+            'parent_id' => 'nullable|integer|exists:libraries,id',
         ]);
 
         $library->update($validatedData);

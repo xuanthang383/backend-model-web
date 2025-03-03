@@ -21,7 +21,7 @@ class Platform extends Model
 
     protected $fillable = ['name'];
 
-    public function products(): Platform|Builder|HasMany
+    public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'platform_id');
     }

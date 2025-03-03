@@ -42,6 +42,11 @@ use Throwable;
  * @property-read int|null $libraries_count
  * @property-read Collection|ProductFiles[] $productFiles
  * @property-read int|null $product_files_count
+ * @property-read Collection|File[] $modelFiles
+ * @property-read int|null $model_files_count
+ * @property-read Collection|File[] $imageFiles
+ * @property-read int|null $image_files_count
+ * @property mixed $thumbnail
  */
 class Product extends Model
 {
@@ -113,6 +118,21 @@ class Product extends Model
             ->withPivot('is_thumbnail'); // Thêm trường từ bảng trung gian
     }
 
+    public function modelFiles(): BelongsToMany
+    {
+        return $this->belongsToMany(File::class, ProductFiles::class, 'product_id', 'file_id')
+            ->withPivot('is_model')
+            ->wherePivot('is_model', true);
+    }
+
+    public function imageFiles(): BelongsToMany
+    {
+        return $this->belongsToMany(File::class, ProductFiles::class, 'product_id', 'file_id')
+            ->withPivot('is_model', 'is_thumbnail')
+            ->wherePivot('is_model', false)
+            ->orWherePivotNull('is_model');
+    }
+
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'product_tags');
@@ -123,14 +143,7 @@ class Product extends Model
         return $this->belongsToMany(Library::class, 'library_product', 'product_id', 'library_id');
     }
 
-    public function thumbnail(): BelongsToMany
-    {
-        return $this->belongsToMany(File::class, 'product_files', 'product_id', 'file_id')
-            ->wherePivot('is_thumbnail', true)
-            ->limit(1);
-    }
-
-    public function productFiles(): Builder|HasMany|Product
+    public function productFiles(): HasMany
     {
         return $this->hasMany(ProductFiles::class, 'product_id');
     }

@@ -27,7 +27,7 @@ class Category extends Model
     protected $fillable = ['name', 'parent_id'];
 
     // Danh mục con
-    public function children(): Builder|HasMany|Category
+    public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
@@ -39,7 +39,7 @@ class Category extends Model
     }
 
     // Danh sách sản phẩm thuộc danh mục
-    public function products(): Builder|HasMany|Category
+    public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }

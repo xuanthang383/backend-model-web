@@ -21,7 +21,7 @@ class Render extends Model
 
     protected $fillable = ['name'];
 
-    public function products(): Render|Builder|HasMany
+    public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'render_id');
     }

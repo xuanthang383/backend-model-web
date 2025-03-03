@@ -31,7 +31,7 @@ class File extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function files(): Builder|HasMany|File
+    public function files(): HasMany
     {
         return $this->hasMany(ProductFiles::class);
     }
