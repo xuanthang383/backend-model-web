@@ -71,6 +71,24 @@ class ProductController extends BaseController
         });
     }
 
+    public function productOfUser()
+    {
+        $query = Product::query()
+            ->where('user_id', Auth::id())
+            ->orderBy("created_at", "desc");
+
+        return $this->paginateResponse($query, request(), "Success", function ($product) {
+            $product->thumbnail = $product->imageFiles->first(function ($file) {
+                return $file->pivot->is_thumbnail == 1;
+            });
+
+            $product->makeHidden("imageFiles", "pivot");
+            $product->thumbnail->makeHidden("pivot");
+
+            return $product;
+        });
+    }
+
     public function show($id)
     {
         $product = Product::with(['category', 'tags', 'files', 'platform', 'render'])->find($id);

@@ -139,6 +139,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::controller(ProductController::class)->prefix('/products')->group(function () {
         // Tạo mới sản phẩm
+        Route::get('/user/list', 'productOfUser');
         Route::post('/', 'store');
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');

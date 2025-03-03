@@ -122,7 +122,7 @@ class LibraryController extends BaseController
      */
     public function showProduct($id)
     {
-        $library = Library::with("products.imageFiles")
+        $library = Library::where('user_id', Auth::id())
             ->find($id);
 
         if (!$library) {
@@ -133,6 +133,9 @@ class LibraryController extends BaseController
             $product->thumbnail = $product->imageFiles->first(function ($file) {
                 return $file->pivot->is_thumbnail == 1;
             });
+
+            $product->makeHidden("imageFiles", "pivot");
+            $product->thumbnail->makeHidden("pivot");
         });
 
         return $this->successResponse($library, 'Library details in');
