@@ -16,7 +16,8 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,14 @@ Route::get('/products', [ProductController::class, 'index']);
 
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+
+    Route::get('/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed'])->name('verification.verify');
+
+    Route::post('/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware(['throttle:6,1'])->name('verification.send');
 
     Route::get('/user', function (Request $request) {
         return $request->user();
