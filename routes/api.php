@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\FileUploadController;
@@ -11,8 +13,11 @@ use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +35,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::controller(RegisteredUserController::class)->group(function () {
         Route::post('/register', 'store')->name('api.register');
+    });
+
+    Route::controller(ForgotPasswordController::class)->group(function () {
+        Route::post('/forgot-password', 'store')->name('forgotPassword');
+    });
+    Route::controller(ResetPasswordController::class)->group(function () {
+        Route::post('/password/reset', 'store')->name('reset');
     });
 
     Route::controller(AuthenticatedSessionController::class)->group(function () {
@@ -50,30 +62,26 @@ Route::get('/products', [ProductController::class, 'index']);
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
 
+    Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+
+    Route::get('/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed'])->name('verification.verify');
+
+    Route::post('/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware(['throttle:6,1'])->name('verification.send');
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    Route::get('/user-token', function (Request $request) {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json([
-                'r' => 1,
-                'msg' => 'Unauthorized',
-                'data' => null,
-            ], 401);
-        }
-
-        return response()->json([
-            'r' => 0,
-            'msg' => 'User token retrieved successfully',
-            'data' => $user // Trả về luôn object user
-        ]);
+//    Route::get('/user-token', [UserController::class, 'getUserToken']);
+    Route::controller(UserController::class)->prefix('/user-token')->group(function () {
+        Route::get('/', 'index');
     });
 
     Route::controller(LibraryController::class)->prefix("/libraries")->group(function () {
         Route::post('/', 'storeLibrary');
+        Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::put('/{id}', 'updateLibrary');
         Route::patch('/{id}', 'updateLibrary');
