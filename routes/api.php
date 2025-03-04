@@ -57,6 +57,7 @@ Route::get('/platforms', [PlatformController::class, 'index']);
 Route::get('/renders', [RenderController::class, 'index']);
 Route::get('/materials', [MaterialController::class, 'index']);
 Route::get('/colors', [ColorController::class, 'index']);
+Route::get('/verify/{id}/{token}', [EmailVerificationController::class, 'verify']);
 
 Route::controller(ProductController::class)->prefix('/products')->group(function () {
     Route::get('/', 'index');
@@ -65,14 +66,6 @@ Route::controller(ProductController::class)->prefix('/products')->group(function
 
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
-
-    Route::get('/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
-
-    Route::get('/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware(['signed'])->name('verification.verify');
-
-    Route::post('/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware(['throttle:6,1'])->name('verification.send');
 
     Route::get('/user', function (Request $request) {
         return $request->user();

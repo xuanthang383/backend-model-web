@@ -11,9 +11,9 @@ class EmailService
     /**
      * Gửi email xác nhận tài khoản
      */
-    public function sendVerificationEmail($user)
+    public function sendVerificationEmail($user, $url)
     {
-        Mail::to($user->email)->send(new VerifyEmail($user));
+        Mail::to($user->email)->send(new VerifyEmail($user, $url));
     }
 
     /**

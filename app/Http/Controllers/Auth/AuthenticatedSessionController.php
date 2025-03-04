@@ -24,12 +24,21 @@ class AuthenticatedSessionController extends Controller
         // 2️⃣ Thử đăng nhập
         if (!Auth::attempt($credentials)) {
             return response()->json([
+                'r' => 1,
                 'message' => 'The provided credentials are incorrect.'
             ], 401);
         }
 
         // 3️⃣ Lấy thông tin user đã đăng nhập
         $user = Auth::user();
+
+        if (is_null($user->email_verified_at)) {
+            return response()->json([
+                'r' => 1,
+                'message' => 'Your email address has not been verified.',
+                'error_code' => 'EMAIL_NOT_VERIFIED'
+            ], 403); // 403 Forbidden
+        }
 
         // 4️⃣ XÓA tất cả token cũ của user trước khi tạo token mới
         $user->tokens()->delete();
@@ -39,6 +48,7 @@ class AuthenticatedSessionController extends Controller
 
         // 6️⃣ Trả về thông tin user + token mới
         return response()->json([
+            'r' => 0,
             'message' => 'Login successful',
             'token' => $token,
             'user' => [

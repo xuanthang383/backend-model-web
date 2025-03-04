@@ -2,21 +2,21 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Xác nhận tài khoản</title>
+    <title>Account Verification</title>
 </head>
 <body>
-<h2>Chào {{ $user->name }},</h2>
-<p>Cảm ơn bạn đã đăng ký tài khoản tại {{ config('app.name') }}.</p>
-<p>Vui lòng nhấp vào nút dưới đây để xác nhận email:</p>
+<h2>Hello {{ $user->name }},</h2>
+<p>Thank you for signing up at {{ config('app.name') }}.</p>
+<p>Please click the button below to verify your email address:</p>
 
 <a href="{{ $url }}"
    style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-    Xác nhận tài khoản
+    Verify Account
 </a>
 
-<p>Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
-<p>Liên kết này sẽ hết hạn sau 60 phút.</p>
+<p>If you did not sign up for an account, please ignore this email.</p>
+<p>This verification link will expire in 60 minutes.</p>
 
-<p>Trân trọng,<br> {{ config('app.name') }} Team</p>
+<p>Best regards,<br>The {{ config('app.name') }} Team</p>
 </body>
 </html>

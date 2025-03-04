@@ -12,21 +12,21 @@ class VerifyEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+    public $verificationUrl;
 
-    public function __construct($user)
+    public function __construct($user, $verificationUrl)
     {
         $this->user = $user;
+        $this->verificationUrl = $verificationUrl;
     }
 
     public function build()
     {
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $this->user->id, 'hash' => sha1($this->user->email)]
-        );
-
-        return $this->subject('Xác nhận tài khoản')
-            ->view('emails.verify-email', ['url' => $verificationUrl]);
+        return $this->subject('Verify Your Email Address')
+                    ->view('emails.verify-email')
+                    ->with([
+                        'user' => $this->user,
+                        'url' => $this->verificationUrl,
+                    ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\BaseController;
+use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -21,18 +22,19 @@ class EmailVerificationController extends BaseController
     /**
      * Xử lý xác minh email
      */
-    public function verify(EmailVerificationRequest $request): JsonResponse
+    public function verify($id, $token)
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return $this->errorResponse($request->email, 'Library details with one level children');
+        $user = User::where('id', $id)->where('verification_token', $token)->first();
 
+        if (!$user) {
+            return $this->errorResponse('Invalid verification link.');
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
-        }
+        // Xác nhận email
+        $user->email_verified_at = now();
+        $user->verification_token = null; // Xóa token sau khi xác minh
+        $user->save();
 
-        return $this->successResponse($request->email, 'Email verified successfully.');
-
+        return $this->successResponse($user->email, 'Email verified successfully.');
     }
 }

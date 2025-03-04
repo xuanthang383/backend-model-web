@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class RegisteredUserController extends BaseController
 {
@@ -25,11 +26,16 @@ class RegisteredUserController extends BaseController
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'verification_token' => Str::random(60), // Tạo token ngẫu nhiên
         ]);
 
-        // Gửi email xác nhận tài khoản
-        $emailService->sendVerificationEmail($user);
+        // URL xác nhận email
+        $verificationUrl = url("/verify/{$user->id}/{$user->verification_token}");
+        // dd($verificationUrl);
 
-        return $this->successResponse($request->email, 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.');
+        // Gửi email xác nhận tài khoản
+        $emailService->sendVerificationEmail($user, $verificationUrl);
+
+        return $this->successResponse($request->email, 'User registered. Please check your email to verify your account.');
     }
 }
