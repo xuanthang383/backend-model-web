@@ -33,6 +33,8 @@ class ProductController extends BaseController
             $query->wherePivot('is_thumbnail', true);
         }]);
 
+        $query->where('status', '=', Product::STATUS_APPROVED);
+
         // Lọc theo tên sản phẩm (nếu có)
         if ($request->has('name')) {
             $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
