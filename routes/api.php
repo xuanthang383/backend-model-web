@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ForgotPasswordController;
@@ -67,8 +68,8 @@ Route::controller(ProductController::class)->prefix('/products')->group(function
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
 
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    Route::controller(ChangePasswordController::class)->prefix('/password/change')->group(function () {
+        Route::post('/', 'changePassword');
     });
 
 //    Route::get('/user-token', [UserController::class, 'getUserToken']);
