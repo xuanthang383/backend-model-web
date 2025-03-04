@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
 
-class ChangePasswordController extends Controller
+class ChangePasswordController extends BaseController
 {
     public function changePassword(Request $request)
     {
@@ -29,8 +30,6 @@ class ChangePasswordController extends Controller
         $user->password = Hash::make($request->new_password);
         $user->save();
 
-        return response()->json([
-            'message' => 'Password has been changed successfully!'
-        ]);
+       return $this->successResponse('Model added to library successfully');
     }
 }
