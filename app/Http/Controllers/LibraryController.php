@@ -148,7 +148,7 @@ class LibraryController extends BaseController
      */
     public function updateLibrary(Request $request, $id)
     {
-        $userId = Auth::id() ?: 3;
+        $userId = Auth::id();
 
         // Lấy thư viện của user hiện tại
         $library = Library::where('user_id', $userId)->find($id);

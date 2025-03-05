@@ -24,15 +24,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Throwable;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ProductController extends BaseController
 {
     public function index(Request $request)
     {
+        // dd($request->query('category_ids'));
         $query = Product::query()->with(['files' => function ($query) {
             $query->wherePivot('is_thumbnail', true);
         }]);
 
+        //Chỉ lấy ra các bản ghi publish
         $query->where('status', '=', Product::STATUS_APPROVED);
 
         // Lọc theo tên sản phẩm (nếu có)
@@ -41,20 +44,38 @@ class ProductController extends BaseController
         }
 
         // Lọc theo category_id (nếu có)
-        if ($request->has('category_id')) {
-            $query->where('category_id', $request->query('category_id'));
+        if ($request->has('category_ids')) {
+            $query->whereIn('category_id', explode(',', $request->query('category_ids')));
         }
+
+        if ($request->has('color_ids')) {
+            $query->whereHas('colors', function ($q) use ($request) {
+                $q->whereIn('colors.id', explode(',', $request->query('color_ids')));
+            });
+        }
+
+        $userId = $this->getUserIdFromToken($request);
+
+
+        if ($request->boolean('is_favorite')) {
+            $query->whereIn('id', function ($subQuery) use ($userId) {
+                $subQuery->select('product_id')
+                    ->from('favorite_products')
+                    ->where('user_id', $userId); // Kiểm tra product_id có trong favorite_products của user
+            });
+        }
+
+        // dd($userId);
 
         // Lọc theo is_private: nếu is_private = 1 thì chỉ lấy sản phẩm có public = 0 hoặc public IS NULL
         if ($request->boolean('is_private')) {
-            $query->where(function ($q) {
-                $q->where('public', 0)->orWhereNull('public');
-            });
+            $query->where(function ($q) use ($userId) {
+                $q->where('public', 0)->orWhereNull('public'); // Sản phẩm không public
+            })->where('user_id', $userId);
         }
 
         // Lọc theo điều kiện "saved" (chỉ lấy sản phẩm của user và nằm trong bảng library_product)
         if ($request->boolean('is_saved')) {
-            $userId = auth()->id() ?: 2; // Lấy ID của user hiện tại
 
             $query->where('user_id', $userId)
                 ->whereIn('id', function ($subQuery) {
@@ -444,5 +465,24 @@ class ProductController extends BaseController
             return $this->errorResponse($e->getMessage());
         }
     }
+
+    public function getUserIdFromToken(Request $request)
+{
+    $token = $request->bearerToken(); // Lấy token từ header "Authorization"
+    
+    if (!$token) {
+        return response()->json(['error' => 'Token is missing'], 401);
+    }
+
+    $accessToken = PersonalAccessToken::findToken($token);
+
+    if (!$accessToken) {
+        return response()->json(['error' => 'Invalid token'], 401);
+    }
+
+    $user = $accessToken->tokenable; // Lấy user từ token
+
+    return $user->id;
+}
 
 }
