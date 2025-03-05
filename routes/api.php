@@ -2,12 +2,14 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ChangePasswordController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
+use App\Http\Controllers\FavoriteProductController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
@@ -15,11 +17,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\EmailVerificationController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\FavoriteProductController;
 
 /*
 |--------------------------------------------------------------------------

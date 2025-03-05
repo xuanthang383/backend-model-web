@@ -76,6 +76,13 @@ class Kernel extends HttpKernel
             SubstituteBindings::class,
         ],
 
+        'api-admin' => [
+            ForceJsonResponse::class,
+            EnsureFrontendRequestsAreStateful::class,
+            ThrottleRequests::class.':api',
+            SubstituteBindings::class,
+        ],
+
         // 'auth' => [
         //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         //     \Illuminate\Routing\Middleware\ThrottleRequests::class.':auth',

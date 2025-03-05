@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\DTO\Product\ChangeStatusDTO;
 use App\DTO\Product\CreateDTO;
 use App\DTO\Product\CreateMultipleDTO;
 use App\DTO\Product\UpdateDTO;
-use App\Http\Requests\Product\ChangeStatusRequest;
 use App\Http\Requests\Product\StoreMultipleProductRequest;
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
@@ -183,29 +181,6 @@ class ProductController extends BaseController
                 ['product' => $productResp],
                 'Product created successfully with colors, materials, and tags',
                 201
-            );
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
-        }
-    }
-
-    public function changeStatus(ChangeStatusRequest $request, $id)
-    {
-        try {
-            $requestValidate = new ChangeStatusDTO($request->validated());
-
-            $product = Product::find($id);
-
-            if (!$product) {
-                return $this->errorResponse('Product not found', 404);
-            }
-
-            $product['status'] = $requestValidate->status;
-            $product->save();
-
-            return $this->successResponse(
-                ['product' => $product],
-                'Product status updated successfully'
             );
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
