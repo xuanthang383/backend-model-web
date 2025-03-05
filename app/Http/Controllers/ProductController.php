@@ -24,7 +24,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Throwable;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class ProductController extends BaseController
 {
@@ -42,15 +41,14 @@ class ProductController extends BaseController
         if ($request->has('name')) {
             $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
         }
-
         // Lọc theo category_id (nếu có)
         if ($request->has('category_ids')) {
-            $query->whereIn('category_id', explode(',', $request->query('category_ids')));
+            $query->whereIn('category_id', $request->query('category_ids'));
         }
 
         if ($request->has('color_ids')) {
             $query->whereHas('colors', function ($q) use ($request) {
-                $q->whereIn('colors.id', explode(',', $request->query('color_ids')));
+                $q->whereIn('colors.id', $request->query('color_ids'));
             });
         }
 
@@ -234,7 +232,7 @@ class ProductController extends BaseController
                 'category_id' => $validateData->category_id ?? null,
                 'platform_id' => $validateData->platform_id ?? null,
                 'render_id' => $validateData->render_id ?? null,
-//                'file_url' => $validateData->file_url ?? null,
+                //                'file_url' => $validateData->file_url ?? null,
             ]);
 
             $product->colors()->sync($validateData->color_ids ?? []);
@@ -309,7 +307,7 @@ class ProductController extends BaseController
                         ]);
 
                         // 🔥 Đẩy lên queue để upload lên S3
-//                        dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+                        //                        dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
 
                         // 🛑 Lưu file mới vào bảng product_files
                         $productFile = ProductFiles::create([
@@ -465,24 +463,4 @@ class ProductController extends BaseController
             return $this->errorResponse($e->getMessage());
         }
     }
-
-    public function getUserIdFromToken(Request $request)
-{
-    $token = $request->bearerToken(); // Lấy token từ header "Authorization"
-    
-    if (!$token) {
-        return response()->json(['error' => 'Token is missing'], 401);
-    }
-
-    $accessToken = PersonalAccessToken::findToken($token);
-
-    if (!$accessToken) {
-        return response()->json(['error' => 'Invalid token'], 401);
-    }
-
-    $user = $accessToken->tokenable; // Lấy user từ token
-
-    return $user->id;
-}
-
 }

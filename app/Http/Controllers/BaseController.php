@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
+
 
 class BaseController extends Controller
 {
@@ -66,5 +68,24 @@ class BaseController extends Controller
             'msg' => $message,
             'data' => null
         ], $code);
+    }
+
+    public function getUserIdFromToken(Request $request)
+    {
+        $token = $request->bearerToken(); // Lấy token từ header "Authorization"
+
+        if (!$token) {
+            return response()->json(['error' => 'Token is missing'], 401);
+        }
+
+        $accessToken = PersonalAccessToken::findToken($token);
+
+        if (!$accessToken) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        }
+
+        $user = $accessToken->tokenable; // Lấy user từ token
+
+        return $user->id;
     }
 }
