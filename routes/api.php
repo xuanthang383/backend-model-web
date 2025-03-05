@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\FavoriteProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -67,6 +68,10 @@ Route::controller(ProductController::class)->prefix('/products')->group(function
 
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::controller(FavoriteProductController::class)->prefix('/favorite')->group(function () {
+        Route::post('/toggle', 'toggleFavorite');
+    });
 
     Route::controller(ChangePasswordController::class)->prefix('/password/change')->group(function () {
         Route::post('/', 'changePassword');
