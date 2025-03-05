@@ -148,6 +148,12 @@ class Product extends Model
         return $this->hasMany(ProductFiles::class, 'product_id');
     }
 
+    public function favoritedByUsers()
+    {
+        return $this->hasMany(FavoriteProduct::class);
+    }
+
+
     public function createProduct(CreateDTO $validatedData)
     {
         try {
