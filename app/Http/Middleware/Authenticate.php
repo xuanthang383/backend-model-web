@@ -24,9 +24,9 @@ class Authenticate extends Middleware
 
     protected function unauthenticated($request, array $guards)
     {
-//        throw new AuthenticationException(
-//            'Unauthorized - Token không hợp lệ hoặc đã hết hạn',
-//            $guards
-//        );
+        throw new AuthenticationException(
+            'Unauthorized - Token không hợp lệ hoặc đã hết hạn',
+            $guards
+        );
     }
 }
