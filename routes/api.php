@@ -57,7 +57,7 @@ Route::get('/platforms', [PlatformController::class, 'index']);
 Route::get('/renders', [RenderController::class, 'index']);
 Route::get('/materials', [MaterialController::class, 'index']);
 Route::get('/colors', [ColorController::class, 'index']);
-Route::get('/verify/{id}/{token}', [EmailVerificationController::class, 'verify']);
+Route::post('/verify/{id}/{token}', [EmailVerificationController::class, 'verify']);
 
 Route::controller(ProductController::class)->prefix('/products')->group(function () {
     Route::get('/', 'index');
