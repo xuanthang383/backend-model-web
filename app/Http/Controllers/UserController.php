@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class UserController extends Controller
+class UserController extends BaseController
 {
     public function index(Request $request)
     {
@@ -23,5 +25,17 @@ class UserController extends Controller
             'msg' => 'User token retrieved successfully',
             'data' => $request->user()
         ]);
+    }
+
+    public function getPermissions()
+    {
+        $userId = Auth::id();
+        $user = User::with('role.permissions')->find($userId);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+     return $this->successResponse($user->getPermissionsJson());
     }
 }

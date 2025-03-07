@@ -76,8 +76,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
 //    Route::get('/user-token', [UserController::class, 'getUserToken']);
-    Route::controller(UserController::class)->prefix('/user-token')->group(function () {
-        Route::get('/', 'index');
+    Route::controller(UserController::class)->prefix('/user')->group(function () {
+        Route::get('/token', 'index');
+        Route::get('/permission','getPermissions');
     });
 
     Route::controller(LibraryController::class)->prefix("/libraries")->group(function () {

@@ -22,7 +22,9 @@ class User extends Authenticatable
         'email',
         'password',
         'verification_token',
-        'email_verified_at'
+        'email_verified_at',
+        'function',
+        'role_id'
     ];
 
     /**
@@ -49,4 +51,25 @@ class User extends Authenticatable
     {
         return $this->hasMany(FavoriteProduct::class);
     }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'id');
+    }
+
+    public function getPermissionsJson()
+    {
+        $permissions = $this->role->permissions->groupBy('function');
+
+        $formattedPermissions = [];
+
+        foreach ($permissions as $function => $actions) {
+            $formattedPermissions[$function] = [];
+            foreach ($actions as $action) {
+                $formattedPermissions[$function][$action->action] = true;
+            }
+        }
+        return $formattedPermissions;
+    }
+
 }
