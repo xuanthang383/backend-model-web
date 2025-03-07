@@ -75,17 +75,18 @@ class BaseController extends Controller
         $token = $request->bearerToken(); // Lấy token từ header "Authorization"
 
         if (!$token) {
-            return response()->json(['error' => 'Token is missing'], 401);
+            return null; // Trả về null thay vì response JSON
         }
 
         $accessToken = PersonalAccessToken::findToken($token);
 
         if (!$accessToken) {
-            return response()->json(['error' => 'Invalid token'], 401);
+            return null; // Trả về null nếu token không hợp lệ
         }
 
         $user = $accessToken->tokenable; // Lấy user từ token
 
-        return $user->id;
+        return $user ? (int)$user->id : null; // Trả về user ID hoặc null
     }
+
 }

@@ -28,7 +28,8 @@ class ProductController extends BaseController
 {
     public function index(Request $request)
     {
-        // dd($request->query('category_ids'));
+        $userId = (int)$this->getUserIdFromToken($request);
+
         $query = Product::query()->with(['files' => function ($query) {
             $query->wherePivot('is_thumbnail', true);
         }]);
@@ -51,14 +52,14 @@ class ProductController extends BaseController
             });
         }
 
-        $userId = $this->getUserIdFromToken($request);
-
         // Nếu yêu cầu danh sách yêu thích
         if ($request->boolean('is_favorite')) {
             $query->whereHas('favorites', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
             });
         }
+
+
 
         // dd($userId);
 
@@ -79,11 +80,13 @@ class ProductController extends BaseController
                 });
         }
 
-        return $this->paginateResponse($query, $request, "Success", function ($product) {
+        return $this->paginateResponse($query, $request, "Success", function ($product) use ($userId) {
             // Lấy ảnh thumbnail (nếu có)
             $thumbnailFile = $product->files->first();
             $product->thumbnail = $thumbnailFile ? $thumbnailFile->file_path : null;
-
+            // Kiểm tra xem sản phẩm có trong danh sách yêu thích của user không
+            $product->is_favorite = $userId? FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists()
+                : false;
             unset($product->files); // Xóa danh sách files để response gọn hơn
             return $product;
         });
