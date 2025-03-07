@@ -51,8 +51,6 @@ class ProductController extends BaseController
         }
 
         $userId = $this->getUserIdFromToken($request);
-        $userId =3;
-
 
         // Nếu yêu cầu danh sách yêu thích
         if ($request->boolean('is_favorite')) {
