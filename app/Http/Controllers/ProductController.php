@@ -11,6 +11,7 @@ use App\Http\Requests\Product\UpdateProductRequest;
 use App\Jobs\UploadFileToS3;
 use App\Models\Category;
 use App\Models\Color;
+use App\Models\FavoriteProduct;
 use App\Models\File;
 use App\Models\Material;
 use App\Models\Platform;
@@ -106,8 +107,14 @@ class ProductController extends BaseController
         });
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
+        $userId = (int)$this->getUserIdFromToken($request);
+
+        // Nếu user đăng nhập, kiểm tra sản phẩm có trong danh sách yêu thích không
+        $isFavorite = $userId
+            ? FavoriteProduct::where('user_id', $userId)->where('product_id', $id)->exists()
+            : false;
         $product = Product::with(['category', 'tags', 'files', 'platform', 'render'])->find($id);
 
         if (!$product) {
@@ -148,7 +155,7 @@ class ProductController extends BaseController
                 'id' => $product->id,
                 'name' => $product->name,
                 'is_ads' => $product->is_ads ?? 0,
-                'is_favorite' => $product->is_favorite ?? 0,
+                'is_favorite' => $isFavorite,
                 'description' => $product->description,
                 'category_id' => $product->category_id,
                 'platform' => $product->platform,
