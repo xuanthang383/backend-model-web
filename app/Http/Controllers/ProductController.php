@@ -51,13 +51,13 @@ class ProductController extends BaseController
         }
 
         $userId = $this->getUserIdFromToken($request);
+        $userId =3;
 
 
+        // Nếu yêu cầu danh sách yêu thích
         if ($request->boolean('is_favorite')) {
-            $query->whereIn('id', function ($subQuery) use ($userId) {
-                $subQuery->select('product_id')
-                    ->from('favorite_products')
-                    ->where('user_id', $userId); // Kiểm tra product_id có trong favorite_products của user
+            $query->whereHas('favorites', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
             });
         }
 

@@ -150,7 +150,7 @@ class Product extends Model
         return $this->hasMany(ProductFiles::class, 'product_id');
     }
 
-    public function favoritedByUsers()
+    public function favorites()
     {
         return $this->hasMany(FavoriteProduct::class);
     }
