@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HigherOrderCollectionProxy;
@@ -43,8 +44,7 @@ use Throwable;
  * @property-read int|null $libraries_count
  * @property-read Collection|ProductFiles[] $productFiles
  * @property-read int|null $product_files_count
- * @property-read Collection|File[] $modelFiles
- * @property-read int|null $model_files_count
+ * @property-read File|null $modelFile
  * @property-read Collection|File[] $imageFiles
  * @property-read int|null $image_files_count
  * @property mixed $thumbnail
@@ -120,12 +120,18 @@ class Product extends Model
             ->withPivot('is_thumbnail'); // Thêm trường từ bảng trung gian
     }
 
-    public function modelFiles(): BelongsToMany
+    public function modelFile(): HasOneThrough
     {
-        return $this->belongsToMany(File::class, ProductFiles::class, 'product_id', 'file_id')
-            ->withPivot('is_model')
-            ->wherePivot('is_model', true);
+        return $this->hasOneThrough(
+            File::class,
+            ProductFiles::class,
+            'product_id', // Khóa ngoại trên bảng trung gian (product_files)
+            'id', // Khóa chính trên bảng File
+            'id', // Khóa chính trên bảng Product
+            'file_id' // Khóa ngoại trên bảng trung gian (product_files)
+        )->where('product_files.is_model', true);
     }
+
 
     public function imageFiles(): BelongsToMany
     {

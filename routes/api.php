@@ -140,7 +140,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/user/list', 'productOfUser');
         Route::post('/', 'store');
         Route::put('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
 
         Route::post('/{id}/change-status', 'changeStatus');
     });

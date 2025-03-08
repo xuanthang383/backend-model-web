@@ -30,9 +30,9 @@ class ChangeStatusRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.required' => 'Trạng thái là bắt buộc.',
-            'status.string' => 'Trạng thái phải là chuỗi ký tự.',
-            'status.in' => 'Trạng thái không hợp lệ.',
+            'status.required' => 'Status is required.',
+            'status.string' => 'Status must be a string.',
+            'status.in' => 'Invalid status.',
         ];
     }
 }

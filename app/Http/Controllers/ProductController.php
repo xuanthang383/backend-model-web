@@ -335,53 +335,6 @@ class ProductController extends BaseController
         }
     }
 
-    /*
-     * Check phân quyền
-     */
-    public function destroy($id)
-    {
-        try {
-            DB::beginTransaction(); // 🔥 Bắt đầu transaction để tránh lỗi dữ liệu
-
-            // 🛑 Tìm sản phẩm cần xóa
-            $product = Product::find($id);
-
-            if (!$product) {
-                return response()->json(['message' => 'Product not found'], 404);
-            }
-
-            // 🛑 Kiểm tra quyền người dùng (nếu cần)
-            if ($product->user_id !== Auth::id()) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            // 🛑 Xóa các file liên quan trong bảng `product_files`
-            $product->productFiles()->delete();
-
-            // 🛑 Xóa các bản ghi trong bảng `product_tags`, `product_colors`, `product_materials`
-            $product->tags()->detach();
-            $product->colors()->detach();
-            $product->materials()->detach();
-            $product->libraries()->detach();
-
-            // 🛑 Xóa sản phẩm
-            $product->delete();
-
-            DB::commit(); // ✅ Xóa thành công, commit transaction
-
-            return response()->json(['message' => 'Product deleted successfully']);
-        } catch (Exception|Throwable $e) {
-            try {
-                DB::rollBack(); // ❌ Nếu có lỗi, rollback transaction
-            } catch (Throwable $e) {
-            }
-            return response()->json([
-                'message' => 'Failed to delete product',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function storeMultiple(StoreMultipleProductRequest $request)
     {
         try {
