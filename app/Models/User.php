@@ -59,8 +59,11 @@ class User extends Authenticatable
 
     public function getPermissionsJson()
     {
-        $permissions = $this->role->permissions->groupBy('function');
+        if (!$this->role) {
+            return []; // Trả về danh sách trống nếu user không có role
+        }
 
+        $permissions = $this->role->permissions->groupBy('function');
         $formattedPermissions = [];
 
         foreach ($permissions as $function => $actions) {

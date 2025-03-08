@@ -19,11 +19,13 @@ class UserController extends BaseController
                 'data' => null,
             ], 401);
         }
-
+        $permissions = User::with('role.permissions')->find(Auth::id()) ? User::with('role.permissions')->find(Auth::id())->getPermissionsJson() : [];
         return response()->json([
             'r' => 0,
             'msg' => 'User token retrieved successfully',
-            'data' => $request->user()
+            'data' => $request->user(),
+            'role' => $user->role ? $user->role->name : null,
+            'permissions' => $permissions
         ]);
     }
 
@@ -36,6 +38,6 @@ class UserController extends BaseController
             return response()->json(['error' => 'User not found'], 404);
         }
 
-     return $this->successResponse($user->getPermissionsJson());
+        return $this->successResponse($user->getPermissionsJson());
     }
 }

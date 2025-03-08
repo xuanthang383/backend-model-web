@@ -55,6 +55,8 @@ class AuthenticatedSessionController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role ? $user->role->name : null,
+                'permissions' => $user->getPermissionsJson()
             ]
         ]);
     }
