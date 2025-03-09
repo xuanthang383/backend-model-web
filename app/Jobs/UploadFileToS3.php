@@ -41,10 +41,11 @@ class UploadFileToS3 implements ShouldQueue
         $s3Path = "{$this->folder}/" . basename(path: $this->fileUrl);
         $uploaded = Storage::disk('s3')->put($s3Path, $fileContent);
 
-        if (!$uploaded) {
+        if ($uploaded) {
+            File::delete($fileContent); // Xóa file tạm khi upload thành công
+            return true;
+        } else {
             return false;
         }
-
-        return true;
     }
 }
