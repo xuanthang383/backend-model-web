@@ -36,4 +36,15 @@ class PasswordResetLinkController extends Controller
 
         return response()->json(['status' => __($status)]);
     }
+
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email|exists:users,email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return $status === Password::RESET_LINK_SENT
+            ? response()->json(['message' => 'Reset link sent!'], 200)
+            : response()->json(['message' => 'Error sending reset link'], 400);
+    }
 }
