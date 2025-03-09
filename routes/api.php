@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\CategoryController;
@@ -37,11 +38,11 @@ Route::middleware('guest')->group(function () {
         Route::post('/register', 'store')->name('api.register');
     });
 
-    Route::controller(ForgotPasswordController::class)->group(function () {
-        Route::post('/forgot-password', 'store')->name('forgotPassword');
+    Route::controller(PasswordResetLinkController::class)->group(function () {
+        Route::post('/password/forgot', 'store')->name('sendResetLinkEmail');
     });
     Route::controller(ResetPasswordController::class)->group(function () {
-        Route::post('/password/reset', 'store')->name('reset');
+        Route::post('/password/reset', 'resetPassword')->name('resetPassword');
     });
 
     Route::controller(AuthenticatedSessionController::class)->group(function () {
