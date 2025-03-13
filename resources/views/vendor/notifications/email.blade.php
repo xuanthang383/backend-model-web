@@ -1,21 +1,21 @@
-<x-mail::message>
-    # Hello!
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Account Verification</title>
+</head>
+<body>
+<p>Thank you for signing up at {{ config('app.name') }}.</p>
+<p>Please click the button below to verify your email address:</p>
 
-    We received a request to reset your account password.
+<a href="{{ $actionUrl }}"
+   style="display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; text-align: center;">
+    Verify Account
+</a>
 
-    @component('mail::button', ['url' => $actionUrl, 'color' => 'success'])
-    Reset Password
-    @endcomponent
+<p>If you did not sign up for an account, please ignore this email.</p>
+<p>This verification link will expire in 60 minutes.</p>
 
-    This password reset link will expire in **{{ config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60) }} minutes**.
-
-    If you did not request a password reset, no further action is required.
-
-    Best regards,
-    {{ config('app.name') }}
-
-    <x-slot:subcopy>
-        If you're having trouble clicking the "Reset Password" button, copy and paste the following URL into your browser:
-        <span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
-    </x-slot:subcopy>
-</x-mail::message>
+<p>Best regards,<br>The {{ config('app.name') }} Team</p>
+</body>
+</html>
