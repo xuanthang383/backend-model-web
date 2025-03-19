@@ -9,7 +9,7 @@
 <p>Thank you for signing up at {{ config('app.name') }}.</p>
 <p>Please click the button below to verify your email address:</p>
 
-<a href="{{ actionUrl }}"
+<a href="{{ $url }}"
    style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
     Verify Account
 </a>
