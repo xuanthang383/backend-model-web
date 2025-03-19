@@ -399,4 +399,25 @@ class ProductController extends BaseController
             return $this->errorResponse($e->getMessage());
         }
     }
+
+    function toggleHidden($id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+
+            if ($product->user_id !== Auth::id()) {
+                return $this->errorResponse('Unauthorized action.', 403);
+            }
+
+            $product->public = !$product->public;
+            $product->save();
+
+            return $this->successResponse(
+                ['product' => $product],
+                'Product visibility toggled successfully'
+            );
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+    }
 }

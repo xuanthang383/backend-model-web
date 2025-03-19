@@ -141,6 +141,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/user/list', 'productOfUser');
         Route::post('/', 'store');
         Route::put('/{id}', 'update');
+        Route::post('/{id}/toggle-hidden', 'toggleHidden');
 
         Route::post('/{id}/change-status', 'changeStatus');
     });
