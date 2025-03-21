@@ -12,6 +12,7 @@ class FileUploadController extends BaseController
 {
     public function getModelFileUrl($product_id)
     {
+        sleep(30);
         // Tìm file liên quan đến sản phẩm có is_model = true
         $productFile = ProductFiles::where('product_id', $product_id)
             ->where('is_model', true)
@@ -34,7 +35,7 @@ class FileUploadController extends BaseController
         }
 
         // Loại bỏ domain S3 nếu tồn tại trong file_path
-        $cleanedPath = str_replace("https://3d-models-web-bucket.s3.ap-southeast-1.amazonaws.com/", "", $file->file_path);
+        $cleanedPath = str_replace(env('URL_IMAGE'), "", $file->file_path);
 
         // Tạo Presigned URL từ S3 (hết hạn sau 5 phút)
         try {
