@@ -2,11 +2,48 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\File;
+use App\Models\ProductFiles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
-class FileUploadController extends Controller
+class FileUploadController extends BaseController
 {
+    public function getModelFileUrl($product_id)
+    {
+        // Tìm file liên quan đến sản phẩm và có is_model = true
+        $productFile = ProductFiles::where('product_id', $product_id)
+            ->where('is_model', true)
+            ->first();
+
+        if (!$productFile) {
+            return response()->json(['error' => 'File not found in product_files'], 404);
+        }
+
+        // Lấy thông tin file từ bảng files
+        $file = File::find($productFile->file_id);
+
+        if (!$file) {
+            return response()->json(['error' => 'File not found in files table'], 404);
+        }
+
+        // Kiểm tra xem file_path có null không
+        if (empty($file->file_path)) {
+            return response()->json(['error' => 'file_path is null'], 400);
+        }
+
+        // Tạo Presigned URL từ S3 (hết hạn sau 10 phút)
+        try {
+            $presignedUrl = Storage::disk('s3')->temporaryUrl(
+                $file->file_path,
+                now()->addMinutes(5)
+            );
+                return $this->successResponse(['url' => $presignedUrl]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to generate S3 URL');
+        }
+    }
     /**
      * Hàm chung lưu file tạm thời
      */

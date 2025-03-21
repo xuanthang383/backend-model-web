@@ -36,6 +36,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::controller(RegisteredUserController::class)->group(function () {
         Route::post('/register', 'store')->name('api.register');
+        Route::get('/model-file-urlabc/{product_id}', 'uploadTempModel');
+
     });
 
     Route::controller(PasswordResetLinkController::class)->group(function () {
@@ -149,5 +151,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(FileUploadController::class)->group(function () {
         Route::post('/upload-temp-images', 'uploadTempImage');
         Route::post('/upload-temp-model', 'uploadTempModel');
+        Route::get('/model-file-url/{product_id}', 'uploadTempModel');
     });
 });
