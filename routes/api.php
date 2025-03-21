@@ -150,6 +150,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(FileUploadController::class)->group(function () {
         Route::post('/upload-temp-images', 'uploadTempImage');
         Route::post('/upload-temp-model', 'uploadTempModel');
-        Route::get('/model-file-url/{product_id}', 'uploadTempModel');
+        Route::get('/model-file-url/{product_id}', 'getModelFileUrl');
     });
 });
