@@ -163,7 +163,6 @@ class ProductController extends BaseController
                 'category_id' => $product->category_id,
                 'platform' => $product->platform,
                 'render' => $product->render,
-                'file_path' => $modelFilePath, // Lấy file model từ product_files có is_model = 1
                 'thumbnail' => $thumbnailPath, // Ảnh được chọn làm thumbnail
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
