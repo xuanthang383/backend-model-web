@@ -12,38 +12,43 @@ class FileUploadController extends BaseController
 {
     public function getModelFileUrl($product_id)
     {
-        // Tìm file liên quan đến sản phẩm và có is_model = true
+        // Tìm file liên quan đến sản phẩm có is_model = true
         $productFile = ProductFiles::where('product_id', $product_id)
             ->where('is_model', true)
             ->first();
 
         if (!$productFile) {
-            return response()->json(['error' => 'File not found in product_files'], 404);
+            return $this->errorResponse('File not found in product_files', [], 404);
         }
 
         // Lấy thông tin file từ bảng files
         $file = File::find($productFile->file_id);
 
         if (!$file) {
-            return response()->json(['error' => 'File not found in files table'], 404);
+            return $this->errorResponse('File not found in files table', [], 404);
         }
 
         // Kiểm tra xem file_path có null không
         if (empty($file->file_path)) {
-            return response()->json(['error' => 'file_path is null'], 400);
+            return $this->errorResponse('file_path is null', [], 400);
         }
 
-        // Tạo Presigned URL từ S3 (hết hạn sau 10 phút)
+        // Loại bỏ domain S3 nếu tồn tại trong file_path
+        $cleanedPath = str_replace("https://3d-models-web-bucket.s3.ap-southeast-1.amazonaws.com/", "", $file->file_path);
+
+        // Tạo Presigned URL từ S3 (hết hạn sau 5 phút)
         try {
             $presignedUrl = Storage::disk('s3')->temporaryUrl(
-                $file->file_path,
+                $cleanedPath,
                 now()->addMinutes(5)
             );
-                return $this->successResponse(['url' => $presignedUrl]);
+
+            return $this->successResponse(['url' => $presignedUrl]);
         } catch (\Exception $e) {
-            return $this->errorResponse('Failed to generate S3 URL');
+            return $this->errorResponse('Failed to generate S3 URL', ['error' => $e->getMessage()], 500);
         }
     }
+
     /**
      * Hàm chung lưu file tạm thời
      */
