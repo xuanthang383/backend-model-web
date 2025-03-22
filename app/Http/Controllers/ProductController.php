@@ -21,8 +21,6 @@ use App\Models\Render;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class ProductController extends BaseController
 {
@@ -60,29 +58,40 @@ class ProductController extends BaseController
         }
 
         // lọc theo điều kiện có ẩn hiển thị với người dùng đó hay không, thêm bảng product_hides
-        if ($request->has('is_hide')) {
-            if ($request->boolean('is_hide')) {
-                // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
-                $query->whereHas('hides', function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                });
-            } else {
-                // Nếu is_hide=false -> Bỏ những sản phẩm mà user đã ẩn
-                $query->whereDoesntHave('hides', function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                });
-            }
+        if ($request->boolean('is_hide')) {
+            // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
+            $query->whereHas('hides', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
+        }
+
+        if ($request->boolean('is_saved')) {
+            $query->whereIn('id', function ($subQuery) use ($userId) {
+                $subQuery->select('product_id')
+                    ->from('library_product')
+                    ->whereIn('library_id', function ($subQuery2) use ($userId) {
+                        $subQuery2->select('id')
+                            ->from('libraries')
+                            ->where('user_id', $userId);
+                    });
+            });
         }
 
 
-        // Lọc theo điều kiện "saved" (chỉ lấy sản phẩm của user và nằm trong bảng library_product)
-        if ($request->boolean('is_saved')) {
+        if ($request->boolean('get_all')) {
+            $query->whereDoesntHave('favorites', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
 
-            $query->where('user_id', $userId)
-                ->whereIn('id', function ($subQuery) {
-                    $subQuery->select('product_id')
-                        ->from('library_product'); // Kiểm tra product_id có trong library_product
-                });
+            $query->whereDoesntHave('hides', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
+
+            $query->whereNotIn('id', function ($subQuery) use ($userId) {
+                $subQuery->select('product_id')
+                    ->from('library_product')
+                    ->where('user_id', $userId);
+            });
         }
 
         return $this->paginateResponse($query, $request, "Success", function ($product) use ($userId) {
@@ -90,7 +99,7 @@ class ProductController extends BaseController
             $thumbnailFile = $product->files->first();
             $product->thumbnail = $thumbnailFile ? $thumbnailFile->file_path : null;
             // Kiểm tra xem sản phẩm có trong danh sách yêu thích của user không
-            $product->is_favorite = $userId? FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists()
+            $product->is_favorite = $userId ? FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists()
                 : false;
             unset($product->files); // Xóa danh sách files để response gọn hơn
             return $product;
