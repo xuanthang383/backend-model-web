@@ -11,19 +11,17 @@ class HideProductController extends BaseController
     {
         $userId = (int)auth()->id();
 
-        $userId = 1;
-
         $productId = (int)$request->product_id;
-        // Kiểm tra xem sản phẩm đã được yêu thích chưa
+        // Kiểm tra xem sản phẩm đã ẩn chưa
         $existingHide = HideProduct::where('user_id', $userId)
             ->where('product_id', $productId)
             ->first();
         if ($existingHide) {
-            // Nếu đã tồn tại, xóa khỏi danh sách yêu thích
+            // Nếu đã ẩn, cho hiện trở lại
             $existingHide->delete();
             return $this->successResponse(null, 'Product removed from hides');
         } else {
-            // Nếu chưa tồn tại, thêm vào danh sách yêu thích
+            // Nếu chưa tồn tại, thêm vào danh sách ẩn
             $favorite = HideProduct::create([
                 'user_id' => $userId,
                 'product_id' => $productId
