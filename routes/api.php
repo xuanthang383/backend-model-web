@@ -11,6 +11,7 @@ use App\Http\Controllers\ColorController;
 use App\Http\Controllers\FavoriteProductController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\HideProductController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
@@ -71,6 +72,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::controller(FavoriteProductController::class)->prefix('/favorite')->group(function () {
         Route::post('/toggle', 'toggleFavorite');
+    });
+
+    Route::controller(HideProductController::class)->prefix('/hide')->group(function () {
+        Route::post('/toggle', 'toggleHide');
     });
 
     Route::controller(ChangePasswordController::class)->prefix('/password/change')->group(function () {

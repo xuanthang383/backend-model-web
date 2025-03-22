@@ -59,15 +59,11 @@ class ProductController extends BaseController
             });
         }
 
-
-
-        // dd($userId);
-
-        // Lọc theo is_private: nếu is_private = 1 thì chỉ lấy sản phẩm có public = 0 hoặc public IS NULL
-        if ($request->boolean('is_private')) {
-            $query->where(function ($q) use ($userId) {
-                $q->where('public', 0)->orWhereNull('public'); // Sản phẩm không public
-            })->where('user_id', $userId);
+        // lọc theo điều kiện có ẩn hiển thị với người dùng đó hay không, thêm bảng product_hides
+        if ($request->boolean('is_hide')) {
+            $query->whereHas('hides', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
         }
 
         // Lọc theo điều kiện "saved" (chỉ lấy sản phẩm của user và nằm trong bảng library_product)

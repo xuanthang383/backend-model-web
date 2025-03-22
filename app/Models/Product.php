@@ -161,6 +161,11 @@ class Product extends Model
         return $this->hasMany(FavoriteProduct::class);
     }
 
+    public function hides()
+    {
+        return $this->hasMany(HideProduct::class);
+    }
+
 
     public function createProduct(CreateDTO $validatedData)
     {
