@@ -60,11 +60,20 @@ class ProductController extends BaseController
         }
 
         // lọc theo điều kiện có ẩn hiển thị với người dùng đó hay không, thêm bảng product_hides
-        if ($request->boolean('is_hide')) {
-            $query->whereHas('hides', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            });
+        if ($request->has('is_hide')) {
+            if ($request->boolean('is_hide')) {
+                // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
+                $query->whereHas('hides', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
+            } else {
+                // Nếu is_hide=false -> Bỏ những sản phẩm mà user đã ẩn
+                $query->whereDoesntHave('hides', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
+            }
         }
+
 
         // Lọc theo điều kiện "saved" (chỉ lấy sản phẩm của user và nằm trong bảng library_product)
         if ($request->boolean('is_saved')) {
