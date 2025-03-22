@@ -50,35 +50,9 @@ class ProductController extends BaseController
             });
         }
 
-        // Nếu yêu cầu danh sách yêu thích
-        if ($request->boolean('is_favorite')) {
-            $query->whereHas('favorites', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            });
-        }
-
-        // lọc theo điều kiện có ẩn hiển thị với người dùng đó hay không, thêm bảng product_hides
-        if ($request->boolean('is_hide')) {
-            // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
-            $query->whereHas('hides', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            });
-        }
-
-        if ($request->boolean('is_saved')) {
-            $query->whereIn('id', function ($subQuery) use ($userId) {
-                $subQuery->select('product_id')
-                    ->from('library_product')
-                    ->whereIn('library_id', function ($subQuery2) use ($userId) {
-                        $subQuery2->select('id')
-                            ->from('libraries')
-                            ->where('user_id', $userId);
-                    });
-            });
-        }
-
-
-        if ($request->boolean('get_all')) {
+        if (!collect(['is_saved', 'is_hidden', 'is_favorite'])->some(fn($param) => $request->boolean($param))) {
+            // Nếu tất cả đều FALSE
+//dd(111);
             $query->whereDoesntHave('favorites', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
             });
@@ -92,6 +66,33 @@ class ProductController extends BaseController
                     ->from('library_product')
                     ->where('user_id', $userId);
             });
+        } else {
+            // Nếu yêu cầu danh sách yêu thích
+            if ($request->boolean('is_favorite')) {
+                $query->whereHas('favorites', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
+            }
+
+            // lọc theo điều kiện có ẩn hiển thị với người dùng đó hay không, thêm bảng product_hides
+            if ($request->boolean('is_hide')) {
+                // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
+                $query->whereHas('hides', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                });
+            }
+
+            if ($request->boolean('is_saved')) {
+                $query->whereIn('id', function ($subQuery) use ($userId) {
+                    $subQuery->select('product_id')
+                        ->from('library_product')
+                        ->whereIn('library_id', function ($subQuery2) use ($userId) {
+                            $subQuery2->select('id')
+                                ->from('libraries')
+                                ->where('user_id', $userId);
+                        });
+                });
+            }
         }
 
         return $this->paginateResponse($query, $request, "Success", function ($product) use ($userId) {
