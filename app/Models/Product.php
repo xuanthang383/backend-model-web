@@ -47,6 +47,10 @@ use Throwable;
  * @property-read File|null $modelFile
  * @property-read Collection|File[] $imageFiles
  * @property-read int|null $image_files_count
+ * @property-read Collection|FavoriteProduct[] $favorites
+ * @property-read int|null $favorites_count
+ * @property-read Collection|HideProduct[] $hides
+ * @property-read int|null $hides_count
  * @property mixed $thumbnail
  */
 class Product extends Model
@@ -156,12 +160,12 @@ class Product extends Model
         return $this->hasMany(ProductFiles::class, 'product_id');
     }
 
-    public function favorites()
+    public function favorites(): Builder|HasMany|Product
     {
         return $this->hasMany(FavoriteProduct::class);
     }
 
-    public function hides()
+    public function hides(): Builder|HasMany|Product
     {
         return $this->hasMany(HideProduct::class);
     }

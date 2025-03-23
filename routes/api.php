@@ -96,7 +96,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::patch('/{id}', 'updateLibrary');
         Route::delete('/{id}', 'destroy');
 
+        Route::post('/remove-model', 'removeModelFromLibrary');
         Route::post('/{id}', 'addModelToLibrary');
+
         Route::get('/{id}/product', 'showProduct');
     });
 

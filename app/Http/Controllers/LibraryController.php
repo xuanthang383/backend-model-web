@@ -115,6 +115,37 @@ class LibraryController extends BaseController
         return $this->successResponse($product, 'Model added to library successfully');
     }
 
+    /**
+     * Xóa một model khỏi thư viện của user hiện tại.
+     * DELETE /api/libraries/{libraryId}/models/{productId}
+     */
+    public function removeModelFromLibrary(Request $request)
+    {
+        $userId = Auth::id();
+
+        // Validate dữ liệu đầu vào
+        $validatedData = $request->validate([
+            'library_id' => 'required|integer|exists:libraries,id',
+            'product_id' => 'required|integer|exists:products,id',
+        ]);
+
+        $libraryId = $validatedData['library_id'];
+        $productId = $validatedData['product_id'];
+
+        // Kiểm tra thư viện có thuộc về người dùng hiện tại không
+        $library = Library::where('user_id', $userId)->findOrFail($libraryId);
+
+        // Kiểm tra model có tồn tại trong thư viện không
+        if (!$library->products()->where('products.id', $productId)->exists()) {
+            return $this->errorResponse('Model not found in the library', 404);
+        }
+
+        // Xóa product khỏi library qua bảng pivot
+        $library->products()->detach($productId);
+
+        return $this->successResponse(null, 'Model removed from library successfully');
+    }
+
 
     /**
      * Hiển thị chi tiết 1 thư viện (tuỳ chọn).
@@ -122,20 +153,43 @@ class LibraryController extends BaseController
      */
     public function showProduct($id)
     {
-        $library = Library::where('user_id', Auth::id())
+        $userId = Auth::id();
+        // Tìm Library của user, kèm danh sách sản phẩm và libraries của sản phẩm đó
+        $library = Library::where('user_id', $userId)
+            ->with([
+                'products' => function ($query) use ($userId) {
+                    $query->with([
+                        'imageFiles',
+                        'libraries' => function ($query) use ($userId) {
+                            $query->wherePivot('libraries.user_id', $userId); // Chỉ lấy library của user
+                        },
+                        'favorites' => function ($query) use ($userId) {
+                            $query->where('user_id', $userId);
+                        },
+                        'hides' => function ($query) use ($userId) {
+                            $query->where('user_id', $userId);
+                        },
+                    ]);
+                }
+            ])
             ->find($id);
 
         if (!$library) {
             return response()->json(['message' => 'Library not found'], 404);
         }
 
+        // Duyệt danh sách sản phẩm để xử lý dữ liệu
         $library->products->each(function ($product) {
+            // Lấy ảnh thumbnail
             $product->thumbnail = $product->imageFiles->first(function ($file) {
                 return $file->pivot->is_thumbnail == 1;
             });
 
+            // Ẩn thông tin không cần thiết
             $product->makeHidden("imageFiles", "pivot");
-            $product->thumbnail->makeHidden("pivot");
+            if ($product->thumbnail) {
+                $product->thumbnail->makeHidden("pivot");
+            }
         });
 
         return $this->successResponse($library, 'Library details in');

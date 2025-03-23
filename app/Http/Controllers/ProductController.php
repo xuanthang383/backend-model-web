@@ -13,6 +13,7 @@ use App\Models\Category;
 use App\Models\Color;
 use App\Models\FavoriteProduct;
 use App\Models\File;
+use App\Models\LibraryProduct;
 use App\Models\Material;
 use App\Models\Platform;
 use App\Models\Product;
@@ -31,6 +32,12 @@ class ProductController extends BaseController
         $query = Product::query()->with(['files' => function ($query) {
             $query->wherePivot('is_thumbnail', true);
         }]);
+
+        if ($userId) {
+            $query->with(["libraries" => function ($query) use ($userId) {
+                $query->wherePivot('libraries.user_id', $userId);
+            }]);
+        }
 
         //Chỉ lấy ra các bản ghi publish
         $query->where('status', '=', Product::STATUS_APPROVED);
@@ -72,17 +79,12 @@ class ProductController extends BaseController
                 $query->whereHas('favorites', function ($q) use ($userId) {
                     $q->where('user_id', $userId);
                 });
-            }
-
-            // lọc theo điều kiện có ẩn hiển thị với người dùng đó hay không, thêm bảng product_hides
-            if ($request->boolean('is_hide')) {
+            } else if ($request->boolean('is_hide')) {
                 // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
                 $query->whereHas('hides', function ($q) use ($userId) {
                     $q->where('user_id', $userId);
                 });
-            }
-
-            if ($request->boolean('is_saved')) {
+            } else if ($request->boolean('is_saved')) {
                 $query->whereIn('id', function ($subQuery) use ($userId) {
                     $subQuery->select('product_id')
                         ->from('library_product')
@@ -100,17 +102,21 @@ class ProductController extends BaseController
             $thumbnailFile = $product->files->first();
             $product->thumbnail = $thumbnailFile ? $thumbnailFile->file_path : null;
             // Kiểm tra xem sản phẩm có trong danh sách yêu thích của user không
-            $product->is_favorite = $userId ? FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists()
-                : false;
+            $product->is_favorite = $userId && FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists();
             unset($product->files); // Xóa danh sách files để response gọn hơn
             return $product;
         });
     }
 
-    public function productOfUser()
+    public function productOfUser(Request $request)
     {
+        $userId = (int) $this->getUserIdFromToken($request);
+
         $query = Product::query()
-            ->where('user_id', Auth::id())
+            ->where('user_id', $userId)
+            ->with(["libraries" => function ($query) use ($userId) {
+                $query->wherePivot('libraries.user_id', $userId);
+            }])
             ->orderBy("created_at", "desc");
 
         return $this->paginateResponse($query, request(), "Success", function ($product) {
@@ -129,14 +135,28 @@ class ProductController extends BaseController
     {
         $userId = (int)$this->getUserIdFromToken($request);
 
-        // Nếu user đăng nhập, kiểm tra sản phẩm có trong danh sách yêu thích không
-        $isFavorite = $userId
-            ? FavoriteProduct::where('user_id', $userId)->where('product_id', $id)->exists()
-            : false;
         $product = Product::with(['category', 'tags', 'files', 'platform', 'render'])->find($id);
-
         if (!$product) {
             return response()->json(['r' => 0, 'msg' => 'Product not found'], 404);
+        }
+
+        // Nếu user đăng nhập, kiểm tra sản phẩm có trong danh sách yêu thích không
+        $isFavorite = $userId && FavoriteProduct::where('user_id', $userId)->where('product_id', $id)->exists();
+
+        $libraries = null;
+        if ($userId) {
+            $libraries = LibraryProduct::where('product_id', $id)
+                ->with(['library' => function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                }])
+                ->get()
+                ->map(function ($libraryProduct) {
+                    return [
+                        'id' => $libraryProduct->library->id,
+                        'name' => $libraryProduct->library->name,
+                        'description' => $libraryProduct->library->description,
+                    ];
+                });
         }
 
         // Lấy tất cả `file_path` từ `product_files` và `files`
@@ -159,15 +179,7 @@ class ProductController extends BaseController
 
         $thumbnailPath = $thumbnail ? File::find($thumbnail->file_id)->file_path : null;
 
-        // Lấy `file_path` từ bảng `product_files` có `is_model = 1`
-        $modelFileRecord = ProductFiles::where('product_id', $id)
-            ->where('is_model', 1)
-            ->first();
-
-        $modelFilePath = $modelFileRecord ? File::find($modelFileRecord->file_id)->file_path : null;
-
-        return response()->json([
-            'r' => 1,
+        return response()->json(['r' => 1,
             'msg' => 'Product retrieved successfully',
             'data' => [
                 'id' => $product->id,
@@ -186,9 +198,9 @@ class ProductController extends BaseController
                 'tags' => $product->tags,
                 'files' => $product->files,
                 'colors' => $product->colors ?? [],
-                'materials' => $product->materials ?? []
-            ]
-        ]);
+                'materials' => $product->materials ?? [],
+                'libraries' => $libraries
+            ]]);
     }
 
     public function store(StoreProductRequest $request)
