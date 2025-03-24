@@ -71,15 +71,20 @@ class ProductController extends BaseController
             $query->whereNotIn('id', function ($subQuery) use ($userId) {
                 $subQuery->select('product_id')
                     ->from('library_product')
-                    ->where('user_id', $userId);
+                    ->whereIn('library_id', function ($subQuery2) use ($userId) {
+                        $subQuery2->select('id')
+                            ->from('libraries')
+                            ->where('user_id', $userId);
+                    });
             });
+
         } else {
             // Nếu yêu cầu danh sách yêu thích
             if ($request->boolean('is_favorite')) {
                 $query->whereHas('favorites', function ($q) use ($userId) {
                     $q->where('user_id', $userId);
                 });
-            } else if ($request->boolean('is_hide')) {
+            } else if ($request->boolean('is_hidden')) {
                 // Nếu is_hide=true -> Lấy sản phẩm mà user đã ẩn
                 $query->whereHas('hides', function ($q) use ($userId) {
                     $q->where('user_id', $userId);
