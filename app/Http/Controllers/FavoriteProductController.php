@@ -10,7 +10,7 @@ class FavoriteProductController extends BaseController
 {
     public function toggleFavorite(Request $request)
     {
-        $userId = (int)auth()->id();
+        $userId = (int)$this->getUserIdFromToken($request);
         $productId = (int)$request->product_id;
         // Kiểm tra xem sản phẩm đã được yêu thích chưa
         $existingFavorite = FavoriteProduct::where('user_id', $userId)

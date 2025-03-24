@@ -9,7 +9,7 @@ class HideProductController extends BaseController
 {
     public function toggleHide(Request $request)
     {
-        $userId = (int)auth()->id();
+        $userId = (int)$this->getUserIdFromToken($request);
 
         $productId = (int)$request->product_id;
         // Kiểm tra xem sản phẩm đã ẩn chưa

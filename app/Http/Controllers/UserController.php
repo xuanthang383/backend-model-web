@@ -29,9 +29,9 @@ class UserController extends BaseController
         ]);
     }
 
-    public function getPermissions()
+    public function getPermissions($request)
     {
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
         $user = User::with('role.permissions')->find($userId);
 
         if (!$user) {

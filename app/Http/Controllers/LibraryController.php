@@ -66,7 +66,7 @@ class LibraryController extends BaseController
             'parent_id' => 'nullable|integer|exists:libraries,id',
         ]);
 
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
         // Tạo mới thư viện
         $library = Library::create([
             'user_id' => $userId,
@@ -84,7 +84,7 @@ class LibraryController extends BaseController
      */
     public function addModelToLibrary(Request $request, $libraryId)
     {
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
 
         // Kiểm tra thư viện có thuộc về người dùng hiện tại không
         $library = Library::where('user_id', $userId)->findOrFail($libraryId);
@@ -121,7 +121,7 @@ class LibraryController extends BaseController
      */
     public function removeModelFromLibrary(Request $request)
     {
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
 
         // Validate dữ liệu đầu vào
         $validatedData = $request->validate([
@@ -153,7 +153,7 @@ class LibraryController extends BaseController
      */
     public function showProduct($id)
     {
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
         // Tìm Library của user, kèm danh sách sản phẩm và libraries của sản phẩm đó
         $library = Library::where('user_id', $userId)
             ->with([
@@ -202,7 +202,7 @@ class LibraryController extends BaseController
      */
     public function updateLibrary(Request $request, $id)
     {
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
 
         // Lấy thư viện của user hiện tại
         $library = Library::where('user_id', $userId)->find($id);
@@ -227,7 +227,7 @@ class LibraryController extends BaseController
      */
     public function destroy($id)
     {
-        $userId = Auth::id();
+        $userId = (int)$this->getUserIdFromToken($request);
 
         // Tìm thư viện
         $library = Library::where('user_id', $userId)->findOrFail($id);
