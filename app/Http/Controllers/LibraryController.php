@@ -151,7 +151,7 @@ class LibraryController extends BaseController
      * Hiển thị chi tiết 1 thư viện (tuỳ chọn).
      * GET /api/libraries/{id}
      */
-    public function showProduct($id)
+    public function showProduct(Request $request, $id)
     {
         $userId = (int)$this->getUserIdFromToken($request);
         // Tìm Library của user, kèm danh sách sản phẩm và libraries của sản phẩm đó
@@ -225,7 +225,7 @@ class LibraryController extends BaseController
      * Xoá 1 thư viện (tuỳ chọn).
      * DELETE /api/libraries/{id}
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $userId = (int)$this->getUserIdFromToken($request);
 

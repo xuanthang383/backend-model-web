@@ -116,6 +116,7 @@ class ProductController extends BaseController
     public function productOfUser(Request $request)
     {
         $userId = (int) $this->getUserIdFromToken($request);
+        $userId = 3;
 
         $query = Product::query()
             ->where('user_id', $userId)
@@ -124,11 +125,11 @@ class ProductController extends BaseController
             }])
             ->orderBy("created_at", "desc");
 
-        return $this->paginateResponse($query, request(), "Success", function ($product) {
+        return $this->paginateResponse($query, request(), "Success", function ($product) use ($userId) {
             $product->thumbnail = $product->imageFiles->first(function ($file) {
                 return $file->pivot->is_thumbnail == 1;
             });
-
+            $product->is_favorite = $userId && FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists();
             $product->makeHidden("imageFiles", "pivot");
             $product->thumbnail->makeHidden("pivot");
 
