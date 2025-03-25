@@ -69,14 +69,12 @@ class Kernel extends HttpKernel
 
         'api' => [
             ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
             ThrottleRequests::class.':api',
             SubstituteBindings::class,
         ],
 
         'api-admin' => [
             ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
             ThrottleRequests::class.':api',
             SubstituteBindings::class,
         ],
