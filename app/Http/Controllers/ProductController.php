@@ -157,6 +157,9 @@ class ProductController extends BaseController
                 }])
                 ->get()
                 ->map(function ($libraryProduct) {
+                    if (!$libraryProduct->library) {
+                        return null; // Bỏ qua nếu không có thư viện
+                    }
                     return [
                         'id' => $libraryProduct->library->id,
                         'name' => $libraryProduct->library->name,
