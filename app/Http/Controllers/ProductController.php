@@ -115,7 +115,7 @@ class ProductController extends BaseController
 
     public function productOfUser(Request $request)
     {
-        $userId = (int) $this->getUserIdFromToken($request);
+        $userId = (int)$this->getUserIdFromToken($request);
         $userId = 3;
 
         $query = Product::query()
@@ -156,16 +156,16 @@ class ProductController extends BaseController
                     $query->where('user_id', $userId);
                 }])
                 ->get()
-                ->map(function ($libraryProduct) {
-                    if (!$libraryProduct->library) {
-                        return null; // Bỏ qua nếu không có thư viện
+                ->reduce(function ($carry, $libraryProduct) {
+                    if ($libraryProduct->library) {
+                        $carry[] = [
+                            'id' => $libraryProduct->library->id,
+                            'name' => $libraryProduct->library->name,
+                            'description' => $libraryProduct->library->description,
+                        ];
                     }
-                    return [
-                        'id' => $libraryProduct->library->id,
-                        'name' => $libraryProduct->library->name,
-                        'description' => $libraryProduct->library->description,
-                    ];
-                });
+                    return $carry;
+                }, []);
         }
 
         // Lấy tất cả `file_path` từ `product_files` và `files`
