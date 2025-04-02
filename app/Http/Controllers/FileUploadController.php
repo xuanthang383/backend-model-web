@@ -10,45 +10,61 @@ use Illuminate\Support\Facades\Storage;
 
 class FileUploadController extends BaseController
 {
-    public function getModelFileUrl($product_id)
+    public function getModelFileUrl(Request $request)
     {
+        $message = $request->input('message');
+        $signatureBase64 = $request->input('signature');
+
+        if (!$message || !$signatureBase64) {
+            return $this->errorResponse('Missing message or signature', 400);
+        }
+
+        $signature = base64_decode($signatureBase64);
+        $clientPublicKey = file_get_contents(storage_path('public.pem'));
+
+        $valid = openssl_verify($message, $signature, $clientPublicKey, OPENSSL_ALGO_SHA256);
+        if (!$valid) {
+            return $this->errorResponse('Invalid signature', 403);
+        }
+
+        $data = json_decode($message, true);
+        $product_id = $data['product_id'] ?? null;
+        $timestamp = $data['timestamp'] ?? 0;
+
+        if (!$product_id) {
+            return $this->errorResponse('Missing product_id in message', 400);
+        }
+
+        if (abs(time() - $timestamp) > 30) {
+            return $this->errorResponse('Request expired', 403);
+        }
+
         sleep(30);
-        // Tìm file liên quan đến sản phẩm có is_model = true
+
         $productFile = ProductFiles::where('product_id', $product_id)
-            ->where('is_model', true)
+            ->where('is_model', 1)
             ->first();
 
         if (!$productFile) {
-            return $this->errorResponse('File not found in product_files', [], 404);
+            return $this->errorResponse('File not found in product_files', 404);
         }
 
-        // Lấy thông tin file từ bảng files
         $file = File::find($productFile->file_id);
-
-        if (!$file) {
-            return $this->errorResponse('File not found in files table', [], 404);
+        if (!$file || empty($file->file_path)) {
+            return $this->errorResponse('Invalid file record', 404);
         }
 
-        // Kiểm tra xem file_path có null không
-        if (empty($file->file_path)) {
-            return $this->errorResponse('file_path is null', [], 400);
-        }
+        $cleanedPath = str_replace(env('URL_IMAGE'), '', $file->file_path);
 
-        // Loại bỏ domain S3 nếu tồn tại trong file_path
-        $cleanedPath = str_replace(env('URL_IMAGE'), "", $file->file_path);
-
-        // Tạo Presigned URL từ S3 (hết hạn sau 5 phút)
         try {
-            $presignedUrl = Storage::disk('s3')->temporaryUrl(
-                $cleanedPath,
-                now()->addMinutes(5)
-            );
-
-            return $this->successResponse(['url' => $presignedUrl]);
+            // 🟢 Trả file về cho client download
+            return Storage::disk('s3')->download($cleanedPath, $file->file_name);
         } catch (\Exception $e) {
-            return $this->errorResponse('Failed to generate S3 URL', ['error' => $e->getMessage()], 500);
+            return $this->errorResponse('Failed to download from S3', ['error' => $e->getMessage()], 500);
         }
     }
+
+
 
     /**
      * Hàm chung lưu file tạm thời

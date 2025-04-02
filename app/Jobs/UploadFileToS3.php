@@ -38,8 +38,14 @@ class UploadFileToS3 implements ShouldQueue
             return false;
         }
 
+        // ✅ Xác định ACL: file model là private, còn lại là public-read
+        $visibility = $this->folder === 'models' ? 'private' : 'public';
+
+
         $s3Path = "{$this->folder}/" . basename(path: $this->fileUrl);
-        $uploaded = Storage::disk('s3')->put($s3Path, $fileContent);
+
+        // Upload lên S3 với quyền truy cập phù hợp
+        $uploaded = Storage::disk('s3')->put($s3Path, $fileContent, $visibility);
 
         if ($uploaded) {
             Storage::disk('public')->delete($filePath);
