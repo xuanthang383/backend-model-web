@@ -13,6 +13,7 @@ use App\Models\Category;
 use App\Models\Color;
 use App\Models\FavoriteProduct;
 use App\Models\File;
+use App\Models\HideProduct;
 use App\Models\LibraryProduct;
 use App\Models\Material;
 use App\Models\Platform;
@@ -148,6 +149,8 @@ class ProductController extends BaseController
 
         // Nếu user đăng nhập, kiểm tra sản phẩm có trong danh sách yêu thích không
         $isFavorite = $userId && FavoriteProduct::where('user_id', $userId)->where('product_id', $id)->exists();
+        // Nếu user đăng nhập, kiểm tra sản phẩm có trong danh sách hide không
+        $isHidden = $userId && HideProduct::where('user_id', $userId)->where('product_id', $id)->exists();
 
         $libraries = null;
         if ($userId) {
@@ -195,6 +198,7 @@ class ProductController extends BaseController
                 'name' => $product->name,
                 'is_ads' => $product->is_ads ?? 0,
                 'is_favorite' => $isFavorite,
+                'is_hide' => $isHidden,
                 'description' => $product->description,
                 'category_id' => $product->category_id,
                 'platform' => $product->platform,
