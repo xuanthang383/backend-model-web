@@ -22,6 +22,10 @@ use App\Models\Render;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Firebase\JWT\ExpiredException; // để bắt lỗi token hết hạn
 
 class ProductController extends BaseController
 {
@@ -453,6 +457,68 @@ class ProductController extends BaseController
             );
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    public function downloadModelFile(Request $request)
+    {
+        $jwt = $request->input('token');
+
+        if (!$jwt) {
+            return response()->json(['error' => 'Missing token'], 400);
+        }
+
+        try {
+            $publicKey = file_get_contents(storage_path('public.pem'));
+
+            // Cho phép lệch vài giây nếu cần
+            \Firebase\JWT\JWT::$leeway = 5;
+
+            // ✅ Giải mã & xác minh JWT
+            $decoded = JWT::decode($jwt, new Key($publicKey, 'RS256'));
+
+            $productId = $decoded->product_id ?? null;
+            $timestamp = $decoded->timestamp ?? 0;
+
+            if (!$productId) {
+                return response()->json(['error' => 'Missing product_id'], 400);
+            }
+
+            if (abs(time() - $timestamp) > 30) {
+                return response()->json(['error' => 'Request expired'], 403);
+            }
+
+            // ✅ Truy xuất file model
+            $productFile = ProductFiles::where('product_id', $productId)
+                ->where('is_model', 1)
+                ->first();
+
+            if (!$productFile) {
+                return response()->json(['error' => 'File not found'], 404);
+            }
+
+            $file = File::find($productFile->file_id);
+            if (!$file || empty($file->file_path)) {
+                return response()->json(['error' => 'Invalid file record'], 404);
+            }
+
+            $cleanedPath = str_replace(env('URL_IMAGE'), '', $file->file_path);
+            $filename = $file->file_name;
+
+            // ✅ Stream file sau khi delay 30 giây (an toàn với file lớn)
+            return response()->streamDownload(function () use ($cleanedPath) {
+                sleep(30); // Giữ kết nối 30s trước khi tải
+                $stream = Storage::disk('s3')->readStream($cleanedPath);
+                fpassthru($stream);
+            }, $filename);
+
+        } catch (ExpiredException $e) {
+            return response()->json(['error' => 'Token expired'], 403);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Invalid token or download failed',
+                'detail' => $e->getMessage(),
+            ], 403);
         }
     }
 }

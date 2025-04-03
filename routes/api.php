@@ -40,11 +40,6 @@ Route::middleware('guest')->group(function () {
 
     });
 
-    Route::controller(FileUploadController::class)->group(function () {
-        Route::post('/secure-download', 'getModelFileUrl')->name('getModelFileUrl');
-
-    });
-
     Route::controller(PasswordResetLinkController::class)->group(function () {
         Route::post('/password/forgot', 'store')->name('sendResetLinkEmail');
     });
@@ -155,8 +150,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', 'store');
         Route::put('/{id}', 'update');
         Route::post('/{id}/toggle-hidden', 'toggleHidden');
-
         Route::post('/{id}/change-status', 'changeStatus');
+        Route::post('/download-model', 'downloadModelFile');
     });
 
     Route::controller(FileUploadController::class)->group(function () {
