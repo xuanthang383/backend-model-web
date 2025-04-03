@@ -511,7 +511,7 @@ class ProductController extends BaseController
 
             // ✅ Stream file sau khi delay 30 giây (an toàn với file lớn)
             return response()->streamDownload(function () use ($cleanedPath) {
-                sleep(30); // Giữ kết nối 30s trước khi tải
+//                sleep(30); // Giữ kết nối 30s trước khi tải
                 $stream = Storage::disk('s3')->readStream($cleanedPath);
                 fpassthru($stream);
             }, $filename);
