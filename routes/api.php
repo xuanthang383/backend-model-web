@@ -10,7 +10,6 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\FavoriteProductController;
 use App\Http\Controllers\FileUploadController;
-use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HideProductController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\MaterialController;
@@ -90,7 +89,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 //    Route::get('/user-token', [UserController::class, 'getUserToken']);
     Route::controller(UserController::class)->prefix('/user')->group(function () {
         Route::get('/token', 'index');
-        Route::get('/permission','getPermissions');
+        Route::get('/permission', 'getPermissions');
     });
 
     Route::controller(LibraryController::class)->prefix("/libraries")->group(function () {
