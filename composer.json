@@ -14,7 +14,8 @@
         "laravel/tinker": "^2.8",
         "league/flysystem-aws-s3-v3": "^3.29",
         "mailersend/laravel-driver": "^2.7",
-        "spatie/data-transfer-object": "^3.9"
+        "spatie/data-transfer-object": "^3.9",
+        "ext-openssl": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

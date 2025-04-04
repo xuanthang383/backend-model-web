@@ -150,6 +150,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/{id}', 'update');
         Route::post('/{id}/toggle-hidden', 'toggleHidden');
         Route::post('/{id}/change-status', 'changeStatus');
+
+        Route::post('/request-download-model', 'requestDownload');
         Route::post('/download-model', 'downloadModelFile');
     });
 

@@ -13,6 +13,7 @@ use App\Models\Category;
 use App\Models\Color;
 use App\Models\FavoriteProduct;
 use App\Models\File;
+use App\Models\FileDownload;
 use App\Models\HideProduct;
 use App\Models\LibraryProduct;
 use App\Models\Material;
@@ -21,12 +22,15 @@ use App\Models\Product;
 use App\Models\ProductFiles;
 use App\Models\Render;
 use Exception;
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-use Firebase\JWT\ExpiredException; // để bắt lỗi token hết hạn
+use Illuminate\Support\Str;
+
+// để bắt lỗi token hết hạn
 
 class ProductController extends BaseController
 {
@@ -466,63 +470,136 @@ class ProductController extends BaseController
 
     public function downloadModelFile(Request $request)
     {
-        $jwt = $request->input('token');
-
-        if (!$jwt) {
-            return response()->json(['error' => 'Missing token'], 400);
-        }
+        $token = $request->input('token');
+        $publicKeyClient = $request->input('public_key');
+        // public ở dạng
+        /*
+        -----BEGIN PUBLIC KEY-----
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwq/u3LUUK9ffxTXH5nK6
+        ZW7q5incdc/6tphJJo2CynjahJioxhsH1RD3y/aUqS9ouBsx9py8Y+tGTRXhlY66
+        EK+kmNOw86R8g9WDqz4dc66g2gzSENw/h5eUlRQhGuu8AF+VvHg0cJxc5wnl363v
+        vIajifzoodnBZCd+Fec+fAndR137QE4KzQYeg6cFNhvTC1XMP395zGqTGbiWUU/n
+        DFF0/2Pv8vC7dPN3NKn9nUQ/g9wX6v6IP/FlEbOLRTPT3f9srjBoObHd/QwVDx8i
+        1r9uFH1KqiftR3+7ReOh07mkpnycwVbN56Z79Amj0Z4gQgjw+6MatI5Qa3s0buEb
+        +QIDAQAB
+        -----END PUBLIC KEY-----
+        */
 
         try {
             $publicKey = file_get_contents(storage_path('public.pem'));
+            $payload = JWT::decode($token, new Key($publicKey, 'RS256'));
 
-            // Cho phép lệch vài giây nếu cần
-            \Firebase\JWT\JWT::$leeway = 5;
+            $uuidToken = $payload->token;
 
-            // ✅ Giải mã & xác minh JWT
-            $decoded = JWT::decode($jwt, new Key($publicKey, 'RS256'));
-
-            $productId = $decoded->product_id ?? null;
-            $timestamp = $decoded->timestamp ?? 0;
-
-            if (!$productId) {
-                return response()->json(['error' => 'Missing product_id'], 400);
+            $fileDownload = FileDownload::where('token', $uuidToken)->first();
+            if (!$fileDownload) {
+                return $this->errorResponse('File not found', 404);
             }
 
-            if (abs(time() - $timestamp) > 30) {
-                return response()->json(['error' => 'Request expired'], 403);
+            if ($payload->pub_key_hash !== hash('sha256', $publicKeyClient)) {
+                return $this->errorResponse('Invalid public key.', 403);
             }
 
-            // ✅ Truy xuất file model
-            $productFile = ProductFiles::where('product_id', $productId)
-                ->where('is_model', 1)
-                ->first();
-
-            if (!$productFile) {
-                return response()->json(['error' => 'File not found'], 404);
+            if ($payload->exp < time()) {
+                return $this->errorResponse('Token expired.', 403);
             }
 
-            $file = File::find($productFile->file_id);
-            if (!$file || empty($file->file_path)) {
-                return response()->json(['error' => 'Invalid file record'], 404);
+            if ($fileDownload->request_ip !== $request->ip()) {
+                return $this->errorResponse('Invalid request IP.', 403);
             }
 
-            $cleanedPath = str_replace(env('URL_IMAGE'), '', $file->file_path);
-            $filename = $file->file_name;
+            if ($fileDownload->used) {
+                return $this->errorResponse('Link has been used.', 403);
+            }
 
-            // ✅ Stream file sau khi delay 30 giây (an toàn với file lớn)
-            return response()->streamDownload(function () use ($cleanedPath) {
-                sleep(30); // Giữ kết nối 30s trước khi tải
-                $stream = Storage::disk('s3')->readStream($cleanedPath);
-                fpassthru($stream);
-            }, $filename);
+            if ($fileDownload->delay_until > time()) {
+                return $this->errorResponse('File is not ready yet.', 403);
+            }
 
-        } catch (ExpiredException $e) {
-            return response()->json(['error' => 'Token expired'], 403);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Invalid token or download failed',
-                'detail' => $e->getMessage(),
-            ], 403);
+            $fileDownload->used = true;
+            $fileDownload->save();
+
+            $file = File::find($fileDownload->file_id);
+            if (!$file) {
+                return $this->errorResponse('File not found', 404);
+            }
+
+            $fileKeyS3 = str_replace(config("app.file_path"), '', $file->file_path);
+            $signedUrl = Storage::disk('s3')->temporaryUrl($fileKeyS3, now()->addSeconds(20));
+            if (!$signedUrl) {
+                return $this->errorResponse('Failed to generate download link.', 500);
+            }
+
+            // Generate AES key & IV
+            $aesKey = random_bytes(32);
+            $iv = random_bytes(12);
+
+            $tag = '';
+            $ciphertext = openssl_encrypt($signedUrl, 'aes-256-gcm', $aesKey, OPENSSL_RAW_DATA, $iv, $tag);
+
+            // Mã hóa AES key bằng RSA public key từ client
+            openssl_public_encrypt($aesKey, $encryptedAesKey, $publicKeyClient, OPENSSL_PKCS1_OAEP_PADDING);
+
+            return $this->successResponse(
+                [
+                    'iv' => base64_encode($iv),
+                    'tag' => base64_encode($tag),
+                    'ciphertext' => base64_encode($ciphertext),
+                    'encrypted_key' => base64_encode($encryptedAesKey)
+                ],
+                'File download link generated successfully'
+            );
+        } catch (ExpiredException|Exception) {
+            return $this->errorResponse('Invalid or expired token.', 403);
         }
     }
+
+    public function requestDownload(Request $request)
+    {
+        $id = $request->input('id');
+        $publicKeyClient = $request->input('public_key');
+
+        $product = Product::find($id);
+        if (!$product) {
+            return $this->errorResponse('Product not found', 404);
+        }
+
+        $productModel = ProductFiles::where('product_id', $id)
+            ->where('is_model', 1)
+            ->first();
+        if (!$productModel) {
+            return $this->errorResponse('Model file not found', 404);
+        }
+
+        // Tạo file_key ngẫu nhiên
+        $uuidToken = Str::random(64);
+
+        // Hash public key để nhúng vào token
+        $pubKeyFingerprint = hash('sha256', $publicKeyClient);
+
+        $payload = [
+            'token' => $uuidToken,
+            'iat' => now()->timestamp,
+            'exp' => now()->addMinutes(10)->timestamp,  // JWT hết hạn sau 10 phút
+            'nbf' => now()->timestamp,
+            "pub_key_hash" => $pubKeyFingerprint,
+        ];
+
+        $privateKey = file_get_contents(storage_path('private.pem'));
+        $jwt = JWT::encode($payload, $privateKey, 'RS256');
+
+        FileDownload::create([
+            'file_id' => $productModel->file_id,
+            'token' => $uuidToken,
+            'used' => false,
+            'delay_until' => now()->addSeconds(1)->timestamp,
+            'request_ip' => $request->ip()
+        ]);
+
+        return $this->successResponse(
+            ['token' => $jwt],
+            'Token generated successfully'
+        );
+    }
+
 }
