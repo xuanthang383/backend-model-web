@@ -592,7 +592,7 @@ class ProductController extends BaseController
             'file_id' => $productModel->file_id,
             'token' => $uuidToken,
             'used' => false,
-            'delay_until' => now()->addSeconds(1)->timestamp,
+            'delay_until' => now()->addSeconds(25)->timestamp,
             'request_ip' => $request->ip()
         ]);
 
