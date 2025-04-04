@@ -125,8 +125,6 @@ class ProductController extends BaseController
     public function productOfUser(Request $request)
     {
         $userId = (int)$this->getUserIdFromToken($request);
-        $userId = 3;
-
         $query = Product::query()
             ->where('user_id', $userId)
             ->with(["libraries" => function ($query) use ($userId) {
