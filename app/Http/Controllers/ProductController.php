@@ -66,6 +66,15 @@ class ProductController extends BaseController
             });
         }
 
+        // Lọc theo tag (nếu có)
+        if ($request->has('tag')) {
+            $tag = $request->query('tag');
+
+            $query->whereHas('tags', function ($q) use ($tag) {
+                $q->where('name', $tag);
+            });
+        }
+
         if (!collect(['is_saved', 'is_hidden', 'is_favorite'])->some(fn($param) => $request->boolean($param))) {
             // Nếu tất cả đều FALSE
 //dd(111);
