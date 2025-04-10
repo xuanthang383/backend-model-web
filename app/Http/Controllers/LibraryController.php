@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DTO\Library\LibraryDTO;
 use App\Http\Requests\Library\LibraryRequest;
+use App\Models\FavoriteProduct;
 use App\Models\Library;
 use App\Models\Product;
 use Exception;
@@ -108,6 +109,10 @@ class LibraryController extends BaseController
 
         // Attach product vào library qua bảng pivot
         $library->products()->attach($productId);
+        // Nếu sản phẩm đã nằm trong danh sách yêu thích, thì xóa khỏi đó
+        FavoriteProduct::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->delete();
 
         // Lấy lại model vừa được thêm để trả về (tuỳ chọn)
         $product = Product::find($productId);
