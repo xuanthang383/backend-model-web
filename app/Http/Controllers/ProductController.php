@@ -56,9 +56,22 @@ class ProductController extends BaseController
             $query->whereIn('category_id', $request->query('category_ids'));
         }
 
+        if ($request->has('category_ids')) {
+            $query->whereIn('category_id', $request->query('category_ids'));
+        }
+
         if ($request->has('color_ids')) {
             $query->whereHas('colors', function ($q) use ($request) {
                 $q->whereIn('colors.id', $request->query('color_ids'));
+            });
+        }
+
+        // Lọc theo tag (nếu có)
+        if ($request->has('tag')) {
+            $tag = $request->query('tag');
+
+            $query->whereHas('tags', function ($q) use ($tag) {
+                $q->where('name', $tag);
             });
         }
 
