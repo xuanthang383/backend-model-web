@@ -51,7 +51,6 @@ use Throwable;
  * @property-read int|null $favorites_count
  * @property-read Collection|HideProduct[] $hides
  * @property-read int|null $hides_count
- * @property mixed $thumbnail
  */
 class Product extends Model
 {
@@ -141,8 +140,10 @@ class Product extends Model
     {
         return $this->belongsToMany(File::class, ProductFiles::class, 'product_id', 'file_id')
             ->withPivot('is_model', 'is_thumbnail')
-            ->wherePivot('is_model', false)
-            ->orWherePivotNull('is_model');
+            ->where(function ($query) {
+                $query->where('is_model', false)
+                    ->orWhereNull('is_model');
+            });
     }
 
     public function tags(): BelongsToMany
@@ -170,6 +171,12 @@ class Product extends Model
         return $this->hasMany(HideProduct::class);
     }
 
+    public function thumbnail(): BelongsToMany
+    {
+        return $this->belongsToMany(File::class, ProductFiles::class, 'product_id', 'file_id')
+            ->withPivot('is_thumbnail')
+            ->wherePivot('is_thumbnail', 1); // Chỉ lấy file có is_thumbnail = 1
+    }
 
     public function createProduct(CreateDTO $validatedData)
     {

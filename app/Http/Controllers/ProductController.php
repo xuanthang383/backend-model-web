@@ -136,21 +136,27 @@ class ProductController extends BaseController
         $userId = (int)$this->getUserIdFromToken($request);
         $query = Product::query()
             ->where('user_id', $userId)
-            ->with(["libraries" => function ($query) use ($userId) {
-                $query->wherePivot('libraries.user_id', $userId);
-            }])
+            ->with([
+                "libraries" => function ($query) use ($userId) {
+                    $query->wherePivot('libraries.user_id', $userId);
+                },
+                "imageFiles" // Eager load imageFiles cho tất cả các sản phẩm
+            ])
             ->orderBy("created_at", "desc");
 
-        return $this->paginateResponse($query, request(), "Success", function ($product) use ($userId) {
+        return $this->paginateResponse($query, request(), "Success", function ($product) {
+            // Nếu vẫn muốn chọn ảnh thumbnail từ imageFiles đã eager load
             $product->thumbnail = $product->imageFiles->first(function ($file) {
                 return $file->pivot->is_thumbnail == 1;
             });
-            $product->is_favorite = $userId && FavoriteProduct::where('user_id', $userId)->where('product_id', $product->id)->exists();
             $product->makeHidden("imageFiles", "pivot");
-            $product->thumbnail->makeHidden("pivot");
-
+            if ($product->thumbnail) {
+                $product->thumbnail->makeHidden("pivot");
+            }
             return $product;
         });
+
+        // Trong production, không nên gọi dd(DB::getQueryLog())
     }
 
     public function show(Request $request, $id)
