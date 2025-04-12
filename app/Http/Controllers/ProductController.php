@@ -120,6 +120,9 @@ class ProductController extends BaseController
             }
         }
 
+        $query->orderByDesc('downloads')
+            ->orderBy('created_at');
+
         return $this->paginateResponse($query, $request, "Success", function ($product) use ($userId) {
             // Lấy ảnh thumbnail (nếu có)
             $thumbnailFile = $product->files->first();
@@ -552,6 +555,12 @@ class ProductController extends BaseController
 
             // Mã hóa AES key bằng RSA public key từ client
             openssl_public_encrypt($aesKey, $encryptedAesKey, $publicKeyClient, OPENSSL_PKCS1_OAEP_PADDING);
+
+            // Tăng lượt tải
+            $product = Product::find($file->product_id);
+            if ($product) {
+                $product->increment('downloads');
+            }
 
             return $this->successResponse(
                 [
