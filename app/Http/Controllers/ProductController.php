@@ -557,9 +557,9 @@ class ProductController extends BaseController
             openssl_public_encrypt($aesKey, $encryptedAesKey, $publicKeyClient, OPENSSL_PKCS1_OAEP_PADDING);
 
             // Tăng lượt tải
-            $product = Product::find($file->product_id);
-            if ($product) {
-                $product->increment('downloads');
+            $productFile = ProductFiles::where('file_id', $file->id)->first();
+            if ($productFile && $productFile->product_id) {
+                Product::where('id', $productFile->product_id)->increment('downloads');
             }
 
             return $this->successResponse(
