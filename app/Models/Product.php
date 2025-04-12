@@ -68,7 +68,8 @@ class Product extends Model
         'color_id',
         'material_id',
         'public',
-        'status'
+        'status',
+        'downloads'
     ];
 
     protected $casts = [
