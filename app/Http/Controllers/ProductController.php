@@ -209,6 +209,7 @@ class ProductController extends BaseController
                             'id' => $libraryProduct->library->id,
                             'name' => $libraryProduct->library->name,
                             'description' => $libraryProduct->library->description,
+                            'parent_id' => $libraryProduct->library->parent_id,
                         ];
                     }
                     return $carry;
