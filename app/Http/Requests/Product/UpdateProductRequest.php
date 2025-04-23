@@ -48,6 +48,7 @@ class UpdateProductRequest extends FormRequest
             'material_ids.*' => 'integer|exists:materials,id',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id',
+            'is_model_link' => 'required|boolean',
         ];
     }
 

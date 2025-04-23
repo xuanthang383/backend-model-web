@@ -15,5 +15,5 @@ class CreateDTO extends DataTransferObject
     public ?array $color_ids = null;
     public ?array $material_ids = null;
     public ?array $tag_ids = null;
-    public bool $isModelLink = false;
+    public bool $is_model_link = false;
 }
