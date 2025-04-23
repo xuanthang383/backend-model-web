@@ -263,7 +263,7 @@ class ProductController extends BaseController
                 'colors' => $product->colors ?? [],
                 'materials' => $product->materials ?? [],
                 'libraries' => $libraries,
-                'is_model_link' => $modelFileUrl
+                'model_link' => $modelFileUrl
             ]]);
     }
 
