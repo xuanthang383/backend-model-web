@@ -238,7 +238,6 @@ class ProductController extends BaseController
             ->first();
 
         $thumbnailPath = $thumbnail ? File::find($thumbnail->file_id)->file_path : null;
-        $modelFileUrl = $product->modelFile?->is_model_link ? $product->modelFile->file_path : null;
 
         return response()->json(['r' => 1,
             'msg' => 'Product retrieved successfully',
@@ -262,8 +261,7 @@ class ProductController extends BaseController
                 'files' => $product->files,
                 'colors' => $product->colors ?? [],
                 'materials' => $product->materials ?? [],
-                'libraries' => $libraries,
-                'model_link' => $modelFileUrl
+                'libraries' => $libraries
             ]]);
     }
 
@@ -620,10 +618,24 @@ class ProductController extends BaseController
             return $this->errorResponse('Model file not found', 404);
         }
 
-        // Tạo file_key ngẫu nhiên
-        $uuidToken = Str::random(64);
+        //Thong tin file model
+        $file = File::find($productModel->file_id);
+        if (!$file) {
+            return $this->errorResponse('File not found', 404);
+        }
 
-        // Hash public key để nhúng vào token
+        if ($file->is_model_link) {
+            return $this->successResponse(
+                [
+                    'is_model_link' => true,
+                    'model_link' => $file->file_path
+                ],
+                'Model link retrieved successfully'
+            );
+        }
+
+        // Tạo token nếu không phải là model link
+        $uuidToken = Str::random(64);
         $pubKeyFingerprint = hash('sha256', $publicKeyClient);
 
         $payload = [
@@ -646,7 +658,10 @@ class ProductController extends BaseController
         ]);
 
         return $this->successResponse(
-            ['token' => $jwt],
+            [
+                'is_model_link' => false,
+                'token' => $jwt
+            ],
             'Token generated successfully'
         );
     }
