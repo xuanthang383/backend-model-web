@@ -19,7 +19,7 @@ class File extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['id', 'file_name', 'file_path'];
+    protected $fillable = ['id', 'file_name', 'file_path', 'is_model_link'];
 
     public const MODEL_FILE_NAME = 'models';
     public const MODEL_FILE_PATH = self::MODEL_FILE_NAME . '/';

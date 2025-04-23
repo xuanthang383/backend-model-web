@@ -218,12 +218,17 @@ class Product extends Model
             $fileName = basename($validatedData->file_url);
             $fileRecord = File::create([
                 'file_name' => $fileName,
-                'file_path' => config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
-                'uploaded_by' => $uploadedBy
+                'file_path' => $validatedData->isModelLink
+                    ? $validatedData->file_url
+                    : config('app.file_path') . File::MODEL_FILE_PATH . $fileName,
+                'uploaded_by' => $uploadedBy,
+                'is_model_link' => $validatedData->isModelLink
             ]);
 
-            // 🔥 Đẩy lên queue để upload lên S3
-            dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models'));
+            // Nếu không phải là model link, thực hiện upload lên S3
+            if (!$validatedData->isModelLink) {
+                dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models'));
+            }
 
             ProductFiles::create([
                 'file_id' => $fileRecord->id,

@@ -61,7 +61,10 @@ class ProductController extends BaseController
         }
         // Lọc theo category_id (nếu có)
         if ($request->has('category_ids')) {
-            $query->whereIn('category_id', $request->query('category_ids'));
+            $categoryIds = $request->query('category_ids') ?? []; // Ensure it's an array
+            if (is_array($categoryIds) && count($categoryIds) > 0) {
+                $query->whereIn('category_id', $categoryIds);
+            }
         }
 
         if ($request->has('color_ids')) {
@@ -235,6 +238,7 @@ class ProductController extends BaseController
             ->first();
 
         $thumbnailPath = $thumbnail ? File::find($thumbnail->file_id)->file_path : null;
+        $modelFileUrl = $product->modelFile?->is_model_link ? $product->modelFile->file_path : null;
 
         return response()->json(['r' => 1,
             'msg' => 'Product retrieved successfully',
@@ -258,7 +262,8 @@ class ProductController extends BaseController
                 'files' => $product->files,
                 'colors' => $product->colors ?? [],
                 'materials' => $product->materials ?? [],
-                'libraries' => $libraries
+                'libraries' => $libraries,
+                'is_model_link' => $modelFileUrl
             ]]);
     }
 
