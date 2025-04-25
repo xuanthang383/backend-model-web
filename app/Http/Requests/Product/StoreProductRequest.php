@@ -28,7 +28,7 @@ class StoreProductRequest extends FormRequest
             'platform_id' => 'nullable|integer|exists:platforms,id',
             'render_id' => 'nullable|integer|exists:renders,id',
             'file_url' => ['required', 'url', function ($attribute, $value, $fail) {
-                if (!preg_match('/\.(rar|zip)$/i', $value)) {
+                if (!$this->is_model_link && !preg_match('/\.(rar|zip)$/i', $value)) {
                     $fail('The file_url must be a valid RAR or ZIP file.');
                 }
             }],
