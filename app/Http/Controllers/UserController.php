@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+
 
 class UserController extends BaseController
 {
@@ -27,6 +29,30 @@ class UserController extends BaseController
             'role' => $user->role ? $user->role->name : null,
             'permissions' => $permissions
         ]);
+    }
+
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return $this->errorResponse('Unauthorized', 401);
+        }
+
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors(), 422);
+        }
+
+        // Update user information
+        $user->update($validator->validated());
+
+        return $this->successResponse($user, 'User information updated successfully');
     }
 
     public function getPermissions(Request $request)

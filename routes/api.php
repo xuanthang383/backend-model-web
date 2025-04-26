@@ -69,6 +69,10 @@ Route::controller(ProductController::class)->prefix('/products')->group(function
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
 
+    Route::controller(UserController::class)->prefix('/user')->group(function () {
+        Route::put('/update', 'update');
+    });
+
     Route::controller(FavoriteProductController::class)->prefix('/favorite')->group(function () {
         Route::post('/toggle', 'toggleFavorite');
     });
@@ -159,5 +163,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/upload-temp-images', 'uploadTempImage');
         Route::post('/upload-temp-model', 'uploadTempModel');
         Route::get('/model-file-url/{product_id}', 'getModelFileUrl');
+        Route::post('/upload-avatar', 'uploadAvatar');
     });
 });
