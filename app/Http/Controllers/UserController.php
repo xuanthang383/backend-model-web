@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 
 class UserController extends BaseController
@@ -21,15 +22,22 @@ class UserController extends BaseController
                 'data' => null,
             ], 401);
         }
+
         $permissions = User::with('role.permissions')->find(Auth::id()) ? User::with('role.permissions')->find(Auth::id())->getPermissionsJson() : [];
+
+        // Tạo URL từ tên file avatar
+        $avatarUrl = $user->avatar ? Storage::disk('s3')->temporaryUrl("avatars/{$user->avatar}", now()->addMinutes(60)) : null;
+
         return response()->json([
             'r' => 0,
             'msg' => 'User token retrieved successfully',
             'data' => $request->user(),
             'role' => $user->role ? $user->role->name : null,
-            'permissions' => $permissions
+            'permissions' => $permissions,
+            'avatar_url' => $avatarUrl // Trả về URL avatar
         ]);
     }
+
 
     public function update(Request $request)
     {

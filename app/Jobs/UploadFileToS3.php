@@ -17,18 +17,19 @@ class UploadFileToS3 implements ShouldQueue
     protected $fileId;
     protected $fileUrl;
     protected $folder;
+    protected $extension; // Thêm biến này
 
-    public function __construct($fileId, $fileUrl, $folder)
+    public function __construct($fileId, $fileUrl, $folder, $extension)
     {
         $this->fileId = $fileId;
         $this->fileUrl = $fileUrl;
         $this->folder = $folder;
+        $this->extension = $extension; // Khởi tạo biến này
     }
 
     public function handle()
     {
-        $fileUrl = request()->get('file_url');
-        $parsedUrl = parse_url(url: $this->fileUrl);
+        $parsedUrl = parse_url($this->fileUrl);
         $filePath = $parsedUrl['path'];
         $filePath = preg_replace('/^\/storage/', '', $filePath);
 
@@ -38,7 +39,9 @@ class UploadFileToS3 implements ShouldQueue
             return false;
         }
 
-        $s3Path = "{$this->folder}/" . basename(path: $this->fileUrl);
+        // Sử dụng tên file từ $this->fileId nếu có, hoặc từ URL
+        $fileName = $this->fileId ? "{$this->fileId}.{$this->extension}" : basename($this->fileUrl);
+        $s3Path = "{$this->folder}/" . $fileName;
         $uploaded = Storage::disk('s3')->put($s3Path, $fileContent);
 
         if ($uploaded) {
@@ -49,3 +52,4 @@ class UploadFileToS3 implements ShouldQueue
         }
     }
 }
+

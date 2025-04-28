@@ -113,25 +113,22 @@ class FileUploadController extends BaseController
             $fileUrl = $request->input('file_url');
             $originalFileName = basename($fileUrl);
             $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
-            $userId = (int)$this->getUserIdFromToken($request);
-            $fileName = "{$userId}.{$extension}";
+            $userId = Auth::id();
+            $fileName = "{$userId}.{$extension}"; // Đảm bảo tên file đã bao gồm phần mở rộng
 
-            // Lưu URL avatar
+            // Lưu tên file avatar
             $user = Auth::user();
 
-            // Đẩy lên queue để upload lên S3
-            dispatch(new UploadFileToS3(null, $fileUrl, 'avatars'));
+            // Đẩy lên queue để upload lên S3 với tên file chính xác
+            dispatch(new UploadFileToS3($fileName, $fileUrl, 'avatars', $extension));
 
-            // Giả sử bạn có một phương thức để lấy URL từ S3 sau khi upload
-            $s3Url = Storage::disk('s3')->url("avatars/{$fileName}");
-
-            // Cập nhật avatar của người dùng
-            $user->avatar = $s3Url;
+            // Cập nhật avatar của người dùng với tên file
+            $user->avatar = "$fileName.{$extension}";
             $user->save();
 
             return response()->json([
                 'message' => 'Avatar uploaded successfully',
-                'avatar_url' => $s3Url // Trả về URL từ S3
+                'avatar_name' => $fileName // Trả về tên file
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Server error', 'message' => $e->getMessage()], 500);
