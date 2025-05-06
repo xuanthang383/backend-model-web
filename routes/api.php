@@ -69,10 +69,6 @@ Route::controller(ProductController::class)->prefix('/products')->group(function
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
 Route::middleware(['auth:sanctum'])->group(function () {
 
-    Route::controller(UserController::class)->prefix('/user')->group(function () {
-        Route::put('/update', 'update');
-    });
-
     Route::controller(FavoriteProductController::class)->prefix('/favorite')->group(function () {
         Route::post('/toggle', 'toggleFavorite');
     });
@@ -87,6 +83,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 //    Route::get('/user-token', [UserController::class, 'getUserToken']);
     Route::controller(UserController::class)->prefix('/user')->group(function () {
+        Route::put('/update', 'update');
         Route::get('/token', 'index');
         Route::get('/permission', 'getPermissions');
         Route::get('/avatar-url', 'getAvatarUrl'); // API mới để lấy URL avatar
