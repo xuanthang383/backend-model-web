@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\File;
 use App\Models\ProductFiles;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -87,7 +88,7 @@ class FileUploadController extends BaseController
                     ]);
                     return response()->json(['error' => 'Invalid file or file does not exist'], 400);
                 }
-                
+
                 // Đọc nội dung file
                 $fileContents = file_get_contents($file->getPathname());
                 if ($fileContents === false) {
@@ -97,18 +98,18 @@ class FileUploadController extends BaseController
                     ]);
                     return response()->json(['error' => 'Cannot read file contents'], 500);
                 }
-                
+
                 // Upload lên S3 không sử dụng ACL hoặc visibility
                 $options = [
                     'ContentType' => $file->getMimeType(),
                 ];
-                
+
                 $uploaded = Storage::disk('s3')->put(
                     $s3Path,
                     $fileContents,
                     $options
                 );
-                
+
                 if (!$uploaded) {
                     Log::error("Upload lên S3 thất bại", [
                         'filename' => $fileName,
@@ -132,8 +133,51 @@ class FileUploadController extends BaseController
             // Cập nhật avatar trong DB nếu cần
             if (isset($options['updateUserAvatar']) && $options['updateUserAvatar']) {
                 $user = Auth::user();
+
+                // Kiểm tra xem user có tồn tại không
+                if (!$user) {
+                    Log::error('User not found in Auth::user()');
+
+                    // Thử lấy user từ Auth::id()
+                    $userId = Auth::id();
+                    Log::info('Auth::id() result', ['user_id' => $userId]);
+
+                    if ($userId) {
+                        // Lấy user từ ID
+                        $user = User::find($userId);
+
+                        if (!$user) {
+                            Log::error('User not found with ID: ' . $userId);
+                            return response()->json(['error' => 'User not found'], 404);
+                        }
+                    } else {
+                        Log::error('Auth::id() returned null');
+                        return response()->json(['error' => 'User not authenticated'], 401);
+                    }
+                }
+
+                // Log thông tin user và tên file
+                Log::info('Updating user avatar', [
+                    'user_id' => $user->id,
+                    'new_avatar' => $fileName
+                ]);
+
                 $user->avatar = $fileName;
-                $user->save();
+                $result = $user->save();
+                
+                // Thử cập nhật bằng cách khác nếu không thành công
+                if (!$result) {
+                    Log::warning('Failed to update avatar with save(), trying update()');
+                    $updateResult = User::where('id', $user->id)->update(['avatar' => $fileName]);
+                    Log::info('Update result with update()', ['result' => $updateResult]);
+                }
+
+                // Log kết quả lưu
+                Log::info('User avatar update result', [
+                    'user_id' => $user->id,
+                    'result' => $result,
+                    'new_avatar' => $user->avatar
+                ]);
             }
 
             return response()->json([
@@ -167,7 +211,7 @@ class FileUploadController extends BaseController
         try {
             // Lấy tất cả các file được gửi lên
             $allFiles = $request->allFiles();
-            
+
             // Debug thông tin request
             Log::info('Request information', [
                 'all_files' => $allFiles,
@@ -218,11 +262,11 @@ class FileUploadController extends BaseController
     public function uploadTempImage(Request $request)
     {
         $fileInfo = $this->prepareFileFromRequest($request);
-        
+
         if (!$fileInfo) {
             return response()->json(['error' => 'File upload failed', 'message' => 'No file uploaded or invalid file'], 400);
         }
-        
+
         return $this->uploadFile($request, 'images', 10240, 'Image uploaded successfully', [
             'fileField' => $fileInfo['fileField'],
             'validateRules' => [
@@ -238,11 +282,11 @@ class FileUploadController extends BaseController
     public function uploadTempModel(Request $request)
     {
         $fileInfo = $this->prepareFileFromRequest($request);
-        
+
         if (!$fileInfo) {
             return response()->json(['error' => 'File upload failed', 'message' => 'No file uploaded or invalid file'], 400);
         }
-        
+
         return $this->uploadFile($request, 'models', 102400, 'Model uploaded successfully', [
             'fileField' => $fileInfo['fileField'],
             'validateRules' => [
@@ -268,11 +312,11 @@ class FileUploadController extends BaseController
         }
 
         $fileInfo = $this->prepareFileFromRequest($request);
-        
+
         if (!$fileInfo) {
             return response()->json(['error' => 'File upload failed', 'message' => 'No file uploaded or invalid file'], 400);
         }
-        
+
         return $this->uploadFile($request, $folder, $maxSize, 'File uploaded successfully', [
             'fileField' => $fileInfo['fileField'],
             'validateRules' => [
@@ -288,8 +332,8 @@ class FileUploadController extends BaseController
     public function uploadAvatar(Request $request)
     {
         $userId = Auth::id();
-        
-        // Debug thông tin request
+
+        // Debug thông tin request và auth
         Log::info('Upload avatar request', [
             'all_files' => $request->allFiles(),
             'has_file' => $request->hasFile('file'),
@@ -297,22 +341,26 @@ class FileUploadController extends BaseController
             'content_type' => $request->header('Content-Type'),
             'request_method' => $request->method(),
             'request_path' => $request->path(),
-            'request_all' => $request->all()
+            'request_all' => $request->all(),
+            'auth_id' => $userId,
+            'auth_user' => Auth::user() ? Auth::user()->id : null,
+            'auth_check' => Auth::check(),
+            'bearer_token' => $request->bearerToken()
         ]);
-        
+
         // Kiểm tra xem có file nào được upload không
         if (!$request->hasFile('avatar') && !$request->hasFile('file')) {
             Log::error('No avatar file uploaded');
             return response()->json(['error' => 'File upload failed', 'message' => 'No avatar file uploaded'], 400);
         }
-        
+
         // Xác định trường chứa file
         $fileField = $request->hasFile('avatar') ? 'avatar' : 'file';
         $file = $request->file($fileField);
-        
+
         // Xác định extension
         $fileExtension = $file->getClientOriginalExtension() ?: 'jpg';
-        
+
         Log::info('Avatar file information', [
             'field' => $fileField,
             'file_name' => $file->getClientOriginalName(),
@@ -322,6 +370,52 @@ class FileUploadController extends BaseController
             'file_path' => $file->getPathname()
         ]);
         
+        // Thử cập nhật avatar trực tiếp
+        try {
+            // Lấy user từ Auth::user() hoặc từ database
+            $user = Auth::user();
+            if (!$user && $userId) {
+                $user = User::find($userId);
+            }
+            
+            if ($user) {
+                // Tạo tên file
+                $fileName = "{$userId}.{$fileExtension}";
+                
+                // Log thông tin trước khi cập nhật
+                Log::info('Updating user avatar directly', [
+                    'user_id' => $user->id,
+                    'old_avatar' => $user->avatar,
+                    'new_avatar' => $fileName
+                ]);
+                
+                // Cập nhật avatar
+                $user->avatar = $fileName;
+                $result = $user->save();
+                
+                // Thử cập nhật bằng cách khác nếu không thành công
+                if (!$result) {
+                    Log::warning('Failed to update avatar with save(), trying update()');
+                    $updateResult = User::where('id', $user->id)->update(['avatar' => $fileName]);
+                    Log::info('Update result with update()', ['result' => $updateResult]);
+                }
+                
+                // Log kết quả
+                Log::info('Direct update result', [
+                    'user_id' => $user->id,
+                    'result' => $result,
+                    'new_avatar' => $user->avatar
+                ]);
+            } else {
+                Log::error('User not found for direct update');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating avatar directly: ' . $e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
         return $this->uploadFile($request, 'avatars', 5120, 'Avatar uploaded successfully', [
             'fileField' => $fileField,
             'fileName' => "{$userId}.{$fileExtension}",
