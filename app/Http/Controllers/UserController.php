@@ -25,16 +25,14 @@ class UserController extends BaseController
 
         $permissions = User::with('role.permissions')->find(Auth::id()) ? User::with('role.permissions')->find(Auth::id())->getPermissionsJson() : [];
 
-        // Tạo URL từ tên file avatar
-        $avatarUrl = $user->avatar ? Storage::disk('s3')->temporaryUrl("avatars/{$user->avatar}", now()->addMinutes(60)) : null;
-
         return response()->json([
             'r' => 0,
             'msg' => 'User token retrieved successfully',
             'data' => $request->user(),
             'role' => $user->role ? $user->role->name : null,
             'permissions' => $permissions,
-            'avatar_url' => $avatarUrl // Trả về URL avatar
+            'avatar' => $user->avatar,
+            'avatar_url' => $user->avatar_url // Sử dụng accessor avatar_url
         ]);
     }
 
@@ -73,5 +71,39 @@ class UserController extends BaseController
         }
 
         return $this->successResponse($user->getPermissionsJson());
+    }
+    
+    /**
+     * Lấy URL avatar của user hiện tại
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAvatarUrl(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return $this->errorResponse('Unauthorized', 401);
+        }
+        
+        if (!$user->avatar) {
+            return $this->errorResponse('User does not have an avatar', 404);
+        }
+        
+        try {
+            // Trả về URL công khai từ S3
+            $url = Storage::disk('s3')->url("avatars/{$user->avatar}");
+            
+            return $this->successResponse([
+                'avatar_url' => $url
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generating avatar URL: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'avatar' => $user->avatar
+            ]);
+            return $this->errorResponse('Failed to generate avatar URL', 500);
+        }
     }
 }

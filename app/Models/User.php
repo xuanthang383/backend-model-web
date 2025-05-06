@@ -75,5 +75,28 @@ class User extends Authenticatable
         }
         return $formattedPermissions;
     }
+    
+    /**
+     * Lấy URL đầy đủ của avatar
+     * 
+     * @return string|null
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+        
+        try {
+            // Trả về URL công khai từ S3
+            return \Storage::disk('s3')->url("avatars/{$this->avatar}");
+        } catch (\Exception $e) {
+            \Log::error('Error generating avatar URL: ' . $e->getMessage(), [
+                'user_id' => $this->id,
+                'avatar' => $this->avatar
+            ]);
+            return null;
+        }
+    }
 
 }

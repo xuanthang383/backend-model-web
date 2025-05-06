@@ -89,6 +89,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(UserController::class)->prefix('/user')->group(function () {
         Route::get('/token', 'index');
         Route::get('/permission', 'getPermissions');
+        Route::get('/avatar-url', 'getAvatarUrl'); // API mới để lấy URL avatar
     });
 
     Route::controller(LibraryController::class)->prefix("/libraries")->group(function () {
@@ -163,6 +164,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/upload-temp-images', 'uploadTempImage');
         Route::post('/upload-temp-model', 'uploadTempModel');
         Route::get('/model-file-url/{product_id}', 'getModelFileUrl');
-        Route::post('/upload-avatar', 'uploadAvatar');
+        Route::post('/upload-avatar', 'uploadAvatar'); // Upload avatar trực tiếp lên S3
+        Route::post('/upload-file-s3', 'uploadFileToS3'); // API chung để upload file lên S3
     });
 });

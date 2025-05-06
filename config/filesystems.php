@@ -37,6 +37,11 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => true,
+            'options' => [
+                'CacheControl' => 'max-age=31536000, public',
+            ],
         ],
         's3' => [
             'driver' => 's3',
@@ -46,6 +51,11 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'), // Đảm bảo AWS_URL đúng
             'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => true, // Bật throw để có thể bắt lỗi
+            'options' => [
+                'CacheControl' => 'max-age=31536000, public', // Cache 1 năm
+            ],
         ],
         'local' => [
             'driver' => 'local',
