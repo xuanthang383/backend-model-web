@@ -164,7 +164,7 @@ class FileUploadController extends BaseController
 
                 $user->avatar = $fileName;
                 $result = $user->save();
-                
+
                 // Thử cập nhật bằng cách khác nếu không thành công
                 if (!$result) {
                     Log::warning('Failed to update avatar with save(), trying update()');
@@ -180,11 +180,21 @@ class FileUploadController extends BaseController
                 ]);
             }
 
-            return response()->json([
+            $response = [
                 'message' => $successMessage,
                 'file_url' => $fileUrl,
                 'file_name' => $fileName
-            ]);
+            ];
+
+            // Thêm avatar vào response nếu đang cập nhật avatar
+            if (isset($options['updateUserAvatar']) && $options['updateUserAvatar']) {
+                $user = Auth::user() ?: User::find(Auth::id());
+                if ($user) {
+                    $response['avatar'] = $user->avatar;
+                }
+            }
+
+            return response()->json($response);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error("Validation lỗi khi upload: " . $e->getMessage(), [
                 'folder' => $folder
@@ -369,7 +379,7 @@ class FileUploadController extends BaseController
             'file_extension' => $fileExtension,
             'file_path' => $file->getPathname()
         ]);
-        
+
         // Thử cập nhật avatar trực tiếp
         try {
             // Lấy user từ Auth::user() hoặc từ database
@@ -377,29 +387,30 @@ class FileUploadController extends BaseController
             if (!$user && $userId) {
                 $user = User::find($userId);
             }
-            
+
             if ($user) {
                 // Tạo tên file
                 $fileName = "{$userId}.{$fileExtension}";
-                
+
                 // Log thông tin trước khi cập nhật
                 Log::info('Updating user avatar directly', [
                     'user_id' => $user->id,
                     'old_avatar' => $user->avatar,
                     'new_avatar' => $fileName
                 ]);
-                
-                // Cập nhật avatar
+
+                // Cập nhật avatar (lưu tên file, không phải URL đầy đủ)
+                // URL đầy đủ sẽ được tạo bởi accessor getAvatarUrlAttribute trong model User
                 $user->avatar = $fileName;
                 $result = $user->save();
-                
+
                 // Thử cập nhật bằng cách khác nếu không thành công
                 if (!$result) {
                     Log::warning('Failed to update avatar with save(), trying update()');
                     $updateResult = User::where('id', $user->id)->update(['avatar' => $fileName]);
                     Log::info('Update result with update()', ['result' => $updateResult]);
                 }
-                
+
                 // Log kết quả
                 Log::info('Direct update result', [
                     'user_id' => $user->id,

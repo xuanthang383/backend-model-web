@@ -77,25 +77,45 @@ class User extends Authenticatable
     }
     
     /**
-     * Lấy URL đầy đủ của avatar
+     * Mutator để tự động chuyển đổi avatar thành URL đầy đủ khi lưu vào database
      * 
-     * @return string|null
+     * @param string|null $value
+     * @return void
      */
-    public function getAvatarUrlAttribute()
+    public function setAvatarAttribute($value)
     {
-        if (!$this->avatar) {
-            return null;
+        if (!$value) {
+            $this->attributes['avatar'] = null;
+            return;
         }
         
+        // Nếu giá trị đã là URL đầy đủ, không cần xử lý thêm
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            $this->attributes['avatar'] = $value;
+            return;
+        }
+        
+        // Nếu là tên file, chuyển đổi thành URL đầy đủ
         try {
-            // Trả về URL công khai từ S3
-            return \Storage::disk('s3')->url("avatars/{$this->avatar}");
+            $baseUrl = env('URL_IMAGE', 'https://3d-models-web-bucket.s3.ap-southeast-1.amazonaws.com/');
+            
+            // Đảm bảo URL kết thúc bằng dấu /
+            if (!str_ends_with($baseUrl, '/')) {
+                $baseUrl .= '/';
+            }
+            
+            // Kiểm tra xem giá trị đã có đường dẫn thư mục chưa
+            if (strpos($value, '/') === false) {
+                $this->attributes['avatar'] = $baseUrl . "avatars/{$value}";
+            } else {
+                $this->attributes['avatar'] = $baseUrl . $value;
+            }
         } catch (\Exception $e) {
-            \Log::error('Error generating avatar URL: ' . $e->getMessage(), [
-                'user_id' => $this->id,
-                'avatar' => $this->avatar
+            \Log::error('Error setting avatar URL: ' . $e->getMessage(), [
+                'user_id' => $this->id ?? 'new_user',
+                'avatar_value' => $value
             ]);
-            return null;
+            $this->attributes['avatar'] = $value; // Lưu giá trị gốc nếu có lỗi
         }
     }
 
