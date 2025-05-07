@@ -40,9 +40,6 @@ class AuthenticatedSessionController extends Controller
             ], 403); // 403 Forbidden
         }
 
-        // 4️⃣ XÓA tất cả token cũ của user trước khi tạo token mới
-        $user->tokens()->delete();
-
         // 5️⃣ Tạo token API mới sử dụng Laravel Sanctum
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -71,8 +68,9 @@ class AuthenticatedSessionController extends Controller
         }
 
         if ($request->user()) {
-            Log::info("User authenticated, deleting tokens...");
-            $request->user()->tokens()->delete();
+            Log::info("User authenticated, deleting current token only...");
+            // Chỉ xóa token hiện tại thay vì xóa tất cả token
+            $request->user()->currentAccessToken()->delete();
         } else {
             Log::info("User not authenticated, possible invalid token.");
         }
