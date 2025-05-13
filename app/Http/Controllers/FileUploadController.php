@@ -29,6 +29,31 @@ class FileUploadController extends BaseController
      *      - updateUserAvatar: boolean - Có cập nhật avatar của user không (mặc định: false)
      * @return \Illuminate\Http\JsonResponse
      */
+
+    private function storeTempFile($file, $folder)
+    {
+        try {
+            $fileName = time() . "_" . preg_replace('/\s+/', '', $file->getClientOriginalName());
+            // $fileName = time() . "_" . $file->getClientOriginalName();
+            $filePath = $file->storeAs("temp/{$folder}", $fileName, 'public');
+
+            if (!$filePath) {
+                Log::error("Lưu file thất bại!", context: [
+                    'filename' => $file->getClientOriginalName(),
+                    'folder' => $folder
+                ]);
+                throw new \Exception("Không thể lưu file.");
+            }
+
+            return asset('storage/' . $filePath); // Trả về đường dẫn truy cập
+        } catch (\Exception $e) {
+            Log::error("Lỗi khi lưu file: " . $e->getMessage(), [
+                'filename' => $file->getClientOriginalName(),
+                'folder' => $folder
+            ]);
+            return null;
+        }
+    }
     private function uploadFile(Request $request, $folder, $maxSize, $successMessage, $options = [])
     {
         try {
@@ -269,21 +294,41 @@ class FileUploadController extends BaseController
     /**
      * API Upload hình ảnh tạm thời
      */
+    /**
+     * API Upload hình ảnh tạm thời
+     */
     public function uploadTempImage(Request $request)
     {
-        $fileInfo = $this->prepareFileFromRequest($request);
+        try {
+            // Validate file
+            $request->validate([
+                'file' => 'required|image|max:10240'
+            ]);
 
-        if (!$fileInfo) {
-            return response()->json(['error' => 'File upload failed', 'message' => 'No file uploaded or invalid file'], 400);
+            $file = $request->file('file');
+
+            // Kiểm tra file có hợp lệ không
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'File upload failed', 'message' => $file->getErrorMessage()], 400);
+            }
+
+            // Lưu file tạm thời vào thư mục temp/images
+            $fileUrl = $this->storeTempFile($file, 'images');
+
+            if (!$fileUrl) {
+                return response()->json(['error' => 'File upload failed'], 500);
+            }
+
+            $fileName = time() . "_" . preg_replace('/\s+/', '', $file->getClientOriginalName());
+
+            return response()->json([
+                'message' => 'Image uploaded successfully',
+                'file_url' => $fileUrl,
+                'file_name' => $fileName
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 500);
         }
-
-        return $this->uploadFile($request, 'images', 10240, 'Image uploaded successfully', [
-            'fileField' => $fileInfo['fileField'],
-            'validateRules' => [
-                $fileInfo['fileField'] => 'required|image|max:10240' // Cho phép tất cả các định dạng hình ảnh, max 10MB
-            ],
-            'updateUserAvatar' => false
-        ]);
     }
 
     /**
@@ -291,19 +336,36 @@ class FileUploadController extends BaseController
      */
     public function uploadTempModel(Request $request)
     {
-        $fileInfo = $this->prepareFileFromRequest($request);
+        try {
+            // Validate file
+            $request->validate([
+                'file' => 'required|file|max:102400'
+            ]);
 
-        if (!$fileInfo) {
-            return response()->json(['error' => 'File upload failed', 'message' => 'No file uploaded or invalid file'], 400);
+            $file = $request->file('file');
+
+            // Kiểm tra file có hợp lệ không
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'File upload failed', 'message' => $file->getErrorMessage()], 400);
+            }
+
+            // Lưu file tạm thời vào thư mục temp/models
+            $fileUrl = $this->storeTempFile($file, 'models');
+
+            if (!$fileUrl) {
+                return response()->json(['error' => 'File upload failed'], 500);
+            }
+
+            $fileName = time() . "_" . preg_replace('/\s+/', '', $file->getClientOriginalName());
+
+            return response()->json([
+                'message' => 'Model uploaded successfully',
+                'file_url' => $fileUrl,
+                'file_name' => $fileName
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 500);
         }
-
-        return $this->uploadFile($request, 'models', 102400, 'Model uploaded successfully', [
-            'fileField' => $fileInfo['fileField'],
-            'validateRules' => [
-                $fileInfo['fileField'] => 'required|file|max:102400' // Cho phép tất cả các loại file, max 100MB
-            ],
-            'updateUserAvatar' => false
-        ]);
     }
 
     /**
