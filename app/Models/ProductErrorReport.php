@@ -8,7 +8,7 @@ class ProductErrorReport extends Model
 {
     protected $fillable = [
         'product_id',
-        'reason_id',
+        'reason',
         'message',
         'status',
     ];
@@ -18,8 +18,4 @@ class ProductErrorReport extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function reason()
-    {
-        return $this->belongsTo(ErrorReason::class, 'reason_id');
-    }
 }

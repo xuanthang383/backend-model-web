@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductErrorReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CategoryController;
@@ -34,14 +35,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/token', 'index');
     });
 
-    Route::controller(ProductController::class)->prefix('/products')->group(function () {
+    Route::controller(ProductController::class)->prefix('products')->group(function () {
+        Route::controller(ProductErrorReportController::class)->prefix('/reports')->group(function () {
+            Route::get('/', 'index');
+            Route::patch('{report}/status', 'updateStatus');
+        });
+
         Route::get('/', 'index');
         Route::post('/', 'store');
-        Route::get('/{id}', 'show');
-        Route::put('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
-
-        Route::post('/{id}/change-status', 'changeStatus');
+        Route::get('{id}', 'show');
+        Route::put('{id}', 'update');
+        Route::delete('{id}', 'destroy');
+        Route::post('{id}/change-status', 'changeStatus');
     });
 
     Route::controller(TagController::class)->prefix('/tags')->group(function () {

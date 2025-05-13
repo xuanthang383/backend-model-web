@@ -166,10 +166,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/upload-avatar', 'uploadAvatar');
         Route::post('/upload-file-s3', 'uploadFileToS3');
     });
-    Route::controller(ProductErrorReportController::class)->prefix('/reports')->group(function () {
-            Route::post('/', 'store');
-            Route::get('/', 'index');
-            Route::patch('/{report}/status', 'updateStatus');
+    Route::controller(ProductErrorReportController::class)->prefix('/products')->group(function () {
+            Route::post('/{product}/report-issue', 'store');
     });
 
     Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {
