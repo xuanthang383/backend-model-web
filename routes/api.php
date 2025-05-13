@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
+use App\Http\Controllers\ErrorReasonController;
 use App\Http\Controllers\FavoriteProductController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\HideProductController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductErrorReportController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
@@ -161,7 +163,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/upload-temp-images', 'uploadTempImage');
         Route::post('/upload-temp-model', 'uploadTempModel');
         Route::get('/model-file-url/{product_id}', 'getModelFileUrl');
-        Route::post('/upload-avatar', 'uploadAvatar'); // Upload avatar trực tiếp lên S3
-        Route::post('/upload-file-s3', 'uploadFileToS3'); // API chung để upload file lên S3
+        Route::post('/upload-avatar', 'uploadAvatar');
+        Route::post('/upload-file-s3', 'uploadFileToS3');
+    });
+    Route::controller(ProductErrorReportController::class)->prefix('/reports')->group(function () {
+            Route::post('/', 'store');
+            Route::get('/', 'index');
+            Route::patch('/{report}/status', 'updateStatus');
+    });
+
+    Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {
+        Route::get('/', 'index');
     });
 });
