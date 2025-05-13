@@ -23,12 +23,39 @@ class ProductController extends BaseController
 {
     public function index(Request $request)
     {
-        \DB::enableQueryLog();
-        $query = Product::with("imageFiles")
-            ->with("user")
-            ->orderBy("products.created_at", "desc");
+        $query = Product::with([
+            "imageFiles",
+            "user",
+            "render",
+            "platform",
+            "category"
+        ]);
+
+        // Filter by name (LIKE)
+        if ($request->filled('name')) {
+            $query->where('name', 'LIKE', '%' . $request->input('name') . '%');
+        }
+
+        // Filter by category_id (exact)
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        // Filter by status (exact)
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // Filter by public (exact, int/bool)
+        if ($request->filled('public')) {
+            $query->where('public', (int)$request->input('public'));
+        }
+
+        $query->orderBy("products.created_at", "desc");
 
         return $this->paginateResponse($query, $request, "Success", function ($product) {
+            // Hide unnecessary IDs from response
+            $product->makeHidden(['category_id', 'platform_id', 'render_id']);
             return $product;
         });
     }
