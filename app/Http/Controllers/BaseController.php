@@ -14,8 +14,7 @@ class BaseController extends Controller
         // Lấy số lượng bản ghi trên mỗi trang, mặc định là 10
         $limit = (int)$request->input('limit', 10);
         $page = (int)$request->input('page', 1);
-        $limit = ($limit > 0) ? $limit : 10; // Đảm bảo `limit` hợp lệ
-
+        
         // Kiểm tra nếu có yêu cầu sắp xếp dữ liệu
         if ($request->has('sort') && $request->has('order')) {
             $sortColumn = $request->input('sort');
@@ -23,6 +22,36 @@ class BaseController extends Controller
             $query = $query->orderBy($sortColumn, $sortOrder);
         }
 
+        // Xử lý trường hợp đặc biệt khi limit = -999 (lấy tất cả dữ liệu)
+        if ($limit === -999) {
+            // Lấy tổng số bản ghi
+            $total = $query->count();
+            
+            // Lấy tất cả dữ liệu
+            $allItems = $query->get();
+            
+            // Nếu có callback xử lý dữ liệu, áp dụng vào collection
+            if ($callback) {
+                $allItems->transform($callback);
+            }
+            
+            // Trả về JSON response với cấu trúc giống phân trang
+            return response()->json([
+                'r' => 0,
+                'msg' => $message,
+                'data' => $allItems,
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $total,
+                    'total' => $total,
+                ]
+            ]);
+        }
+        
+        // Đảm bảo `limit` hợp lệ cho trường hợp thông thường
+        $limit = ($limit > 0) ? $limit : 10;
+        
         // Phân trang dữ liệu
         $data = $query->paginate($limit, ['*'], 'page', $page);
 
