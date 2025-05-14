@@ -10,7 +10,7 @@ class ProductErrorReportController extends BaseController
 {
 
     // Danh sách (cho admin)
-    public function index(Request $request)
+    public function index()
     {
         $query = ProductErrorReport::with(['product']);
 
