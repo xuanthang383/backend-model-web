@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ColorController;
+use App\Http\Controllers\ErrorReasonController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
@@ -80,5 +81,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(FileUploadController::class)->group(function () {
         Route::post('/upload-temp-images', 'uploadTempImage');
         Route::post('/upload-temp-model', 'uploadTempModel');
+    });
+
+    Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {
+        Route::get('/', 'index');
     });
 });
