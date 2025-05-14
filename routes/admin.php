@@ -3,8 +3,8 @@
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductErrorReportController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\MaterialController;
@@ -55,6 +55,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::controller(CategoryController::class)->prefix('/categories')->group(function () {
         Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
     });
 
     Route::controller(PlatformController::class)->prefix('/platforms')->group(function () {
