@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductErrorReportController;
+use App\Http\Controllers\Admin\ProductNameChangeRequestController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::controller(AuthenticatedSessionController::class)->group(function () {
-    Route::post('/login', 'store')->name('api.login');
+    Route::post('/login', 'store')->name('admin.api.login');
     Route::post('/logout', 'destroy');
 });
 
@@ -40,6 +41,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(ProductErrorReportController::class)->prefix('/reports')->group(function () {
             Route::get('/', 'index');
             Route::patch('{report}/status', 'updateStatus');
+        });
+
+        Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
+            Route::get('/', 'index');
         });
 
         Route::get('/', 'index');
