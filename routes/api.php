@@ -165,11 +165,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // Báo lỗi sản phẩm
     Route::prefix('products')->controller(ProductErrorReportController::class)->group(function () {
         Route::post('/{product}/report-issue', 'store');
-    });
-
-// Gợi ý tên sản phẩm
-    Route::prefix('products')->controller(ProductNameChangeRequestController::class)->group(function () {
-        Route::post('/{product}/suggest-name', 'store');
+        Route::post('/{product}/suggest-name', 'suggestName');
     });
 
     Route::controller(FileUploadController::class)->group(function () {

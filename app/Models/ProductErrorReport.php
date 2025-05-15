@@ -19,14 +19,25 @@ class ProductErrorReport extends Model
 {
     protected $fillable = [
         'product_id',
-        'reason',
+        'user_id',
+        'reason_id',
+        'value',
         'message',
         'status',
+        'admin_note'
     ];
 
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
+    public function errorReason()
+    {
+        return $this->belongsTo(ErrorReason::class, 'reason_id');
+    }
 }
