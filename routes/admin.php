@@ -47,16 +47,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('{id}/change-status', 'changeStatus')->middleware('permission:models.change_status');
     });
 
-        Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
-            Route::get('/', 'index');
-        });
-
+    Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
         Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::get('{id}', 'show');
-        Route::put('{id}', 'update');
-        Route::delete('{id}', 'destroy');
-        Route::post('{id}/change-status', 'changeStatus');
+    });
+
     Route::controller(ProductErrorReportController::class)->prefix('/products/reports')->group(function () {
         Route::get('/', 'index')->middleware('permission:productsReports.view');
         Route::patch('{report}/status', 'updateStatus')->middleware('permission:productsReports.change_status');
