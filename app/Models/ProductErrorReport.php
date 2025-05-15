@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @mixin  Builder
  * @property int $id
  * @property int $product_id
- * @property string $reason
+ * @property int $reason_id
  * @property string $message
  * @property string $status
  * @property Product $product
@@ -24,7 +24,6 @@ class ProductErrorReport extends Model
         'value',
         'message',
         'status',
-        'admin_note'
     ];
 
     public function product(): BelongsTo
