@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\DTO\Category\CreateDTO;
 use App\DTO\Category\UpdateDTO;
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Category\StoreCategoryRequest;
 use App\Http\Requests\Category\UpdateCategoryRequest;
 use App\Models\Category;
 use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
 class CategoryController extends BaseController
@@ -18,17 +20,24 @@ class CategoryController extends BaseController
      */
     public function index(Request $request)
     {
-        $query = Category::whereNull('parent_id')->with('children');
-
-        // Filter by name if provided
-        if ($request->has('name')) {
-            $name = $request->input('name');
-            $query->where(function ($q) use ($name) {
-                $q->where('name', 'LIKE', "%{$name}%")
-                    ->orWhereHas('children', function ($subQ) use ($name) {
-                        $subQ->where('name', 'LIKE', "%{$name}%");
-                    });
-            });
+        try {
+            // Kiểm tra quyền xem danh sách category
+            PermissionHelper::checkPermission('category', 'view');
+            
+            $query = Category::whereNull('parent_id')->with('children');
+    
+            // Filter by name if provided
+            if ($request->has('name')) {
+                $name = $request->input('name');
+                $query->where(function ($q) use ($name) {
+                    $q->where('name', 'LIKE', "%{$name}%")
+                        ->orWhereHas('children', function ($subQ) use ($name) {
+                            $subQ->where('name', 'LIKE', "%{$name}%");
+                        });
+                });
+            }
+        } catch (AuthorizationException $e) {
+            return $this->errorResponse($e->getMessage(), 403);
         }
 
         return $this->paginateResponse($query, $request, "Get list category", function ($category) {
@@ -52,6 +61,9 @@ class CategoryController extends BaseController
     public function store(StoreCategoryRequest $request)
     {
         try {
+            // Kiểm tra quyền thêm category
+            PermissionHelper::checkPermission('category', 'add');
+            
             $validatedData = new CreateDTO($request->validated());
             $category = Category::create([
                 'name' => $validatedData->name,
@@ -63,6 +75,8 @@ class CategoryController extends BaseController
                 'Category created successfully',
                 201
             );
+        } catch (AuthorizationException $e) {
+            return $this->errorResponse($e->getMessage(), 403);
         } catch (Exception $e) {
             return $this->errorResponse('Failed to create category', 500);
         }
@@ -74,6 +88,9 @@ class CategoryController extends BaseController
     public function show(string $id)
     {
         try {
+            // Kiểm tra quyền xem chi tiết category
+            PermissionHelper::checkPermission('category', 'view');
+            
             $category = Category::with('children')->findOrFail($id);
 
             return $this->successResponse([
@@ -89,6 +106,8 @@ class CategoryController extends BaseController
                     }),
                 ]
             ]);
+        } catch (AuthorizationException $e) {
+            return $this->errorResponse($e->getMessage(), 403);
         } catch (Exception $e) {
             return $this->errorResponse('Category not found', 404);
         }
@@ -100,6 +119,9 @@ class CategoryController extends BaseController
     public function update(UpdateCategoryRequest $request, string $id)
     {
         try {
+            // Kiểm tra quyền sửa category
+            PermissionHelper::checkPermission('category', 'edit');
+            
             $validatedData = new UpdateDTO($request->validated());
             $category = Category::findOrFail($id);
 
@@ -127,6 +149,8 @@ class CategoryController extends BaseController
             return $this->successResponse([
                 'category' => $category
             ], 'Category updated successfully');
+        } catch (AuthorizationException $e) {
+            return $this->errorResponse($e->getMessage(), 403);
         } catch (Exception $e) {
             return $this->errorResponse('Category not found', 404);
         }
@@ -138,6 +162,9 @@ class CategoryController extends BaseController
     public function destroy(string $id)
     {
         try {
+            // Kiểm tra quyền xóa category
+            PermissionHelper::checkPermission('category', 'delete');
+            
             $category = Category::findOrFail($id);
 
             // Check if category has children
@@ -148,6 +175,8 @@ class CategoryController extends BaseController
             $category->delete();
 
             return $this->successResponse(null, 'Category deleted successfully');
+        } catch (AuthorizationException $e) {
+            return $this->errorResponse($e->getMessage(), 403);
         } catch (Exception $e) {
             return $this->errorResponse('Category not found', 404);
         }

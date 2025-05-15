@@ -3,6 +3,7 @@
 namespace App\Http;
 
 use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckToken;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnsureEmailIsVerified;
@@ -105,5 +106,6 @@ class Kernel extends HttpKernel
         'signed' => ValidateSignature::class,
         'throttle' => ThrottleRequests::class,
         'verified' => EnsureEmailIsVerified::class,
+        'permission' => CheckPermission::class,
     ];
 }

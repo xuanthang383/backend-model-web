@@ -34,20 +34,21 @@ Route::controller(AuthenticatedSessionController::class)->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(UserController::class)->prefix('/user')->group(function () {
         Route::get('/token', 'index');
+        Route::get('/permissions', 'permissions');
     });
 
     Route::controller(ProductController::class)->prefix('products')->group(function () {
-        Route::controller(ProductErrorReportController::class)->prefix('/reports')->group(function () {
-            Route::get('/', 'index');
-            Route::patch('{report}/status', 'updateStatus');
-        });
+        Route::get('/', 'index')->middleware('permission:models.view');
+        Route::post('/', 'store')->middleware('permission:models.add');
+        Route::get('{id}', 'show')->middleware('permission:models.view');
+        Route::put('{id}', 'update')->middleware('permission:models.edit');
+        Route::delete('{id}', 'destroy')->middleware('permission:models.delete');
+        Route::post('{id}/change-status', 'changeStatus')->middleware('permission:models.change_status');
+    });
 
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::get('{id}', 'show');
-        Route::put('{id}', 'update');
-        Route::delete('{id}', 'destroy');
-        Route::post('{id}/change-status', 'changeStatus');
+    Route::controller(ProductErrorReportController::class)->prefix('/products/reports')->group(function () {
+        Route::get('/', 'index')->middleware('permission:productsReports.view');
+        Route::patch('{report}/status', 'updateStatus')->middleware('permission:productsReports.change_status');
     });
 
     Route::controller(TagController::class)->prefix('/tags')->group(function () {
@@ -55,11 +56,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::controller(CategoryController::class)->prefix('/categories')->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::get('/{id}', 'show');
-        Route::put('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
+        Route::get('/', 'index')->middleware('permission:category.view');
+        Route::post('/', 'store')->middleware('permission:category.add');
+        Route::get('/{id}', 'show')->middleware('permission:category.view');
+        Route::put('/{id}', 'update')->middleware('permission:category.edit');
+        Route::delete('/{id}', 'destroy')->middleware('permission:category.delete');
     });
 
     Route::controller(PlatformController::class)->prefix('/platforms')->group(function () {

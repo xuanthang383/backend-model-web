@@ -58,7 +58,7 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'role_id', 'id');
     }
 
-    public function getPermissionsJson()
+    public function getPermissionsJson(): array
     {
         if (!$this->role) {
             return []; // Trả về danh sách trống nếu user không có role
@@ -75,10 +75,10 @@ class User extends Authenticatable
         }
         return $formattedPermissions;
     }
-    
+
     /**
      * Mutator để tự động chuyển đổi avatar thành URL đầy đủ khi lưu vào database
-     * 
+     *
      * @param string|null $value
      * @return void
      */
@@ -88,22 +88,22 @@ class User extends Authenticatable
             $this->attributes['avatar'] = null;
             return;
         }
-        
+
         // Nếu giá trị đã là URL đầy đủ, không cần xử lý thêm
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             $this->attributes['avatar'] = $value;
             return;
         }
-        
+
         // Nếu là tên file, chuyển đổi thành URL đầy đủ
         try {
-            $baseUrl = env('URL_IMAGE', 'https://3d-models-web-bucket.s3.ap-southeast-1.amazonaws.com/');
-            
+            $baseUrl = config('app.file_path');
+
             // Đảm bảo URL kết thúc bằng dấu /
             if (!str_ends_with($baseUrl, '/')) {
                 $baseUrl .= '/';
             }
-            
+
             // Kiểm tra xem giá trị đã có đường dẫn thư mục chưa
             if (strpos($value, '/') === false) {
                 $this->attributes['avatar'] = $baseUrl . "avatars/{$value}";
