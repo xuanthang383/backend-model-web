@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductErrorReportController;
 use App\Http\Controllers\Admin\ProductNameChangeRequestController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -38,6 +39,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/permissions', 'permissions');
     });
 
+    Route::controller(UserController::class)->prefix('/users')->group(function () {
+        Route::get('/', 'list')->middleware('permission:users.view');
+        Route::post('/', 'store')->middleware('permission:users.add');
+        Route::get('/{id}', 'show')->middleware('permission:users.view');
+        Route::put('/{id}', 'update')->middleware('permission:users.edit');
+        Route::delete('/{id}', 'destroy')->middleware('permission:users.delete');
+        Route::patch('/{id}/role', 'updateRole')->middleware('permission:users.change_role');
+        Route::patch('/{id}/status', 'updateStatus')->middleware('permission:users.change_status');
+    });
+
+    Route::controller(ProductErrorReportController::class)->prefix('/products/reports')->group(function () {
+        Route::get('/', 'index')->middleware('permission:productsReports.view');
+        Route::patch('{report}/status', 'updateStatus')->middleware('permission:productsReports.change_status');
+    });
+
     Route::controller(ProductController::class)->prefix('products')->group(function () {
         Route::get('/', 'index')->middleware('permission:models.view');
         Route::post('/', 'store')->middleware('permission:models.add');
@@ -49,11 +65,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
         Route::get('/', 'index');
-    });
-
-    Route::controller(ProductErrorReportController::class)->prefix('/products/reports')->group(function () {
-        Route::get('/', 'index')->middleware('permission:productsReports.view');
-        Route::patch('{report}/status', 'updateStatus')->middleware('permission:productsReports.change_status');
     });
 
     Route::controller(TagController::class)->prefix('/tags')->group(function () {
@@ -91,5 +102,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {
         Route::get('/', 'index');
+    });
+
+    Route::controller(RoleController::class)->prefix('/roles')->group(function () {
+        Route::get('/', 'index')->middleware('permission:roles.view');
+        Route::post('/', 'store')->middleware('permission:roles.add');
+        Route::get('/{id}', 'show')->middleware('permission:roles.view');
+        Route::put('/{id}', 'update')->middleware('permission:roles.edit');
+        Route::delete('/{id}', 'destroy')->middleware('permission:roles.delete');
+        Route::get('/permissions/all', 'getAllPermissions')->middleware('permission:roles.view');
+        Route::put('/{id}/permissions', 'updatePermissions')->middleware('permission:roles.edit_permissions');
     });
 });

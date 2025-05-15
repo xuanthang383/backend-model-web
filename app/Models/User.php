@@ -2,12 +2,37 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @mixin Builder
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property string|null $verification_token
+ * @property string|null $email_verified_at
+ * @property string|null $function
+ * @property string|null $role_id
+ * @property string|null $avatar
+ * @property string|null $remember_token
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, FavoriteProduct> $favoriteProducts
+ * @property-read int|null $favorite_products_count
+ * @property-read Collection<int, Role> $role
+ * @property-read int|null $role_count
+ * @property-read Collection<int, Permission> $permissions
+ * @property-read int|null $permissions_count
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -48,12 +73,12 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function favoriteProducts()
+    public function favoriteProducts(): HasMany|Builder|User
     {
         return $this->hasMany(FavoriteProduct::class);
     }
 
-    public function role()
+    public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id', 'id');
     }
