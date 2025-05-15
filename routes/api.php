@@ -17,6 +17,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductErrorReportController;
+use App\Http\Controllers\ProductNameChangeRequestController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
@@ -147,7 +148,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', 'destroy');
     });
 
-    Route::controller(ProductController::class)->prefix('/products')->group(function () {
+// Nhóm route chính cho ProductController
+    Route::prefix('products')->controller(ProductController::class)->group(function () {
         // Tạo mới sản phẩm
         Route::get('/user/list', 'productOfUser');
         Route::post('/', 'store');
@@ -155,8 +157,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{id}/toggle-hidden', 'toggleHidden');
         Route::post('/{id}/change-status', 'changeStatus');
 
+        // Tải file mô hình
         Route::post('/request-download-model', 'requestDownload');
         Route::post('/download-model', 'downloadModelFile');
+    });
+
+// Báo lỗi sản phẩm
+    Route::prefix('products')->controller(ProductErrorReportController::class)->group(function () {
+        Route::post('/{product}/report-issue', 'store');
+    });
+
+// Gợi ý tên sản phẩm
+    Route::prefix('products')->controller(ProductNameChangeRequestController::class)->group(function () {
+        Route::post('/{product}/suggest-name', 'store');
     });
 
     Route::controller(FileUploadController::class)->group(function () {
@@ -165,9 +178,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/model-file-url/{product_id}', 'getModelFileUrl');
         Route::post('/upload-avatar', 'uploadAvatar');
         Route::post('/upload-file-s3', 'uploadFileToS3');
-    });
-    Route::controller(ProductErrorReportController::class)->prefix('/products')->group(function () {
-            Route::post('/{product}/report-issue', 'store');
     });
 
     Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {

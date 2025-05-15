@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductErrorReportController;
+use App\Http\Controllers\Admin\ProductNameChangeRequestController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::controller(AuthenticatedSessionController::class)->group(function () {
-    Route::post('/login', 'store')->name('api.login');
+    Route::post('/login', 'store')->name('admin.api.login');
     Route::post('/logout', 'destroy');
 });
 
@@ -46,6 +47,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('{id}/change-status', 'changeStatus')->middleware('permission:models.change_status');
     });
 
+        Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
+            Route::get('/', 'index');
+        });
+
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('{id}', 'show');
+        Route::put('{id}', 'update');
+        Route::delete('{id}', 'destroy');
+        Route::post('{id}/change-status', 'changeStatus');
     Route::controller(ProductErrorReportController::class)->prefix('/products/reports')->group(function () {
         Route::get('/', 'index')->middleware('permission:productsReports.view');
         Route::patch('{report}/status', 'updateStatus')->middleware('permission:productsReports.change_status');
