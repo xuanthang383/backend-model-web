@@ -20,11 +20,7 @@ class PermissionServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Đăng ký helper function toàn cục
-        if (!function_exists('has_permission')) {
-            function has_permission(string $function, string $action): bool {
-                return PermissionHelper::hasPermission($function, $action);
-            }
-        }
+        // Không cần khai báo hàm helper ở đây nữa
+        // Đã di chuyển sang file app/Helpers/functions.php
     }
 }
