@@ -22,10 +22,10 @@ class CategoryController extends BaseController
     {
         try {
             // Kiểm tra quyền xem danh sách category
-            PermissionHelper::checkPermission('category', 'view');
-            
+            // PermissionHelper::checkPermission('category', 'view');
+
             $query = Category::whereNull('parent_id')->with('children');
-    
+
             // Filter by name if provided
             if ($request->has('name')) {
                 $name = $request->input('name');
@@ -62,8 +62,8 @@ class CategoryController extends BaseController
     {
         try {
             // Kiểm tra quyền thêm category
-            PermissionHelper::checkPermission('category', 'add');
-            
+            // PermissionHelper::checkPermission('category', 'add');
+
             $validatedData = new CreateDTO($request->validated());
             $category = Category::create([
                 'name' => $validatedData->name,
@@ -89,8 +89,8 @@ class CategoryController extends BaseController
     {
         try {
             // Kiểm tra quyền xem chi tiết category
-            PermissionHelper::checkPermission('category', 'view');
-            
+            // PermissionHelper::checkPermission('category', 'view');
+
             $category = Category::with('children')->findOrFail($id);
 
             return $this->successResponse([
@@ -120,8 +120,8 @@ class CategoryController extends BaseController
     {
         try {
             // Kiểm tra quyền sửa category
-            PermissionHelper::checkPermission('category', 'edit');
-            
+            // PermissionHelper::checkPermission('category', 'edit');
+
             $validatedData = new UpdateDTO($request->validated());
             $category = Category::findOrFail($id);
 
@@ -163,8 +163,8 @@ class CategoryController extends BaseController
     {
         try {
             // Kiểm tra quyền xóa category
-            PermissionHelper::checkPermission('category', 'delete');
-            
+            // PermissionHelper::checkPermission('category', 'delete');
+
             $category = Category::findOrFail($id);
 
             // Check if category has children

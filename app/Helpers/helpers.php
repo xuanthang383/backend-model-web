@@ -26,6 +26,6 @@ if (!function_exists('check_permission')) {
      */
     function check_permission(string $function, string $action): void
     {
-        PermissionHelper::checkPermission($function, $action);
+        // PermissionHelper::checkPermission($function, $action);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 
 class PermissionHelper
@@ -9,37 +10,35 @@ class PermissionHelper
     /**
      * Kiểm tra xem user hiện tại có quyền thực hiện hành động không
      *
-     * @param string $function Tên chức năng (ví dụ: 'category')
-     * @param string $action Tên hành động (ví dụ: 'view', 'add', 'edit', 'delete')
+     * @param string $key Mã năng (ví dụ: 'category.view')
      * @return bool
      */
-    public static function hasPermission(string $function, string $action): bool
+    public static function hasPermission(string $key): bool
     {
         $user = Auth::user();
-        
+
         if (!$user || !$user->role) {
             return false;
         }
-        
+
         $permissions = $user->role->permissions;
-        
-        return $permissions->contains(function ($permission) use ($function, $action) {
-            return $permission->function === $function && $permission->action === $action;
+
+        return $permissions->contains(function ($permission) use ($key) {
+            return $permission->key === $key;
         });
     }
-    
+
     /**
      * Kiểm tra quyền và ném ra ngoại lệ nếu không có quyền
      *
-     * @param string $function Tên chức năng
-     * @param string $action Tên hành động
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @param string $key Mã năng (ví dụ: 'category.view')
+     * @throws AuthorizationException
      */
-    public static function checkPermission(string $function, string $action): void
+    public static function checkPermission(string $key): void
     {
-        if (!self::hasPermission($function, $action)) {
-            throw new \Illuminate\Auth\Access\AuthorizationException(
-                "You do not have permission to $action $function."
+        if (!self::hasPermission($key)) {
+            throw new AuthorizationException(
+                "You do not have permission to $key."
             );
         }
     }
