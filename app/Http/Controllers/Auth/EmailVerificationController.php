@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\BaseController;
 use App\Models\User;
+use App\Services\EmailService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
 class EmailVerificationController extends BaseController
 {
@@ -36,5 +38,35 @@ class EmailVerificationController extends BaseController
         $user->save();
 
         return $this->successResponse($user->email, 'Email verified successfully.');
+    }
+
+    /**
+     * Gửi lại email xác thực
+     */
+    public function resend(Request $request, EmailService $emailService)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user->email_verified_at) {
+            return $this->errorResponse('Email already verified.', 400);
+        }
+
+        // Tạo token mới nếu không có
+        if (!$user->verification_token) {
+            $user->verification_token = Str::random(60);
+            $user->save();
+        }
+
+        // URL xác nhận email
+        $verificationUrl = url("/verify/{$user->id}/{$user->verification_token}");
+
+        // Gửi email xác nhận tài khoản
+        $emailService->sendVerificationEmail($user, $verificationUrl);
+
+        return $this->successResponse(null, 'Verification email sent successfully.');
     }
 }
