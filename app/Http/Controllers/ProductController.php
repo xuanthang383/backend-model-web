@@ -566,7 +566,26 @@ class ProductController extends BaseController
                 return $this->errorResponse('File not found', 404);
             }
 
-            $fileKeyS3 = str_replace(config("app.file_path"), '', $file->file_path);
+            // Extract the path part from the S3 URL based on URL format
+            $bucket = config('filesystems.disks.s3.bucket');
+            $region = config('filesystems.disks.s3.region');
+            
+            // Check for URL with region
+            $s3BaseUrlWithRegion = "https://{$bucket}.s3.{$region}.amazonaws.com/";
+            // Check for URL without region (models)
+            $s3BaseUrlNoRegion = "https://{$bucket}.s3.amazonaws.com/";
+            
+            if (strpos($file->file_path, $s3BaseUrlWithRegion) === 0) {
+                // URL with region
+                $fileKeyS3 = substr($file->file_path, strlen($s3BaseUrlWithRegion));
+            } elseif (strpos($file->file_path, $s3BaseUrlNoRegion) === 0) {
+                // URL without region (models)
+                $fileKeyS3 = substr($file->file_path, strlen($s3BaseUrlNoRegion));
+            } else {
+                // Fallback to the old method
+                $fileKeyS3 = str_replace(config("app.file_path"), '', $file->file_path);
+            }
+            
             $signedUrl = Storage::disk('s3')->temporaryUrl($fileKeyS3, now()->addSeconds(20));
             if (!$signedUrl) {
                 return $this->errorResponse('Failed to generate download link.', 500);

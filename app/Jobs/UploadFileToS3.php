@@ -51,11 +51,23 @@ class UploadFileToS3 implements ShouldQueue
             
             // Update the file path in the database to point to the S3 URL
             if ($this->fileId) {
-                $s3Url = Storage::disk('s3')->url($s3Path);
+                // Construct the S3 URL based on folder type
+                $bucket = config('filesystems.disks.s3.bucket');
+                $region = config('filesystems.disks.s3.region');
+                
+                // For model files, use URL without region
+                if ($this->folder === 'models') {
+                    $s3Url = "https://{$bucket}.s3.amazonaws.com/{$s3Path}";
+                } else {
+                    // For all other files, use URL with region
+                    $s3Url = "https://{$bucket}.s3.{$region}.amazonaws.com/{$s3Path}";
+                }
+                
                 Log::info('Updating file path in database', [
                     'fileId' => $this->fileId,
                     'originalPath' => $this->fileUrl,
                     's3Path' => $s3Path,
+                    'folder' => $this->folder,
                     's3Url' => $s3Url
                 ]);
                 

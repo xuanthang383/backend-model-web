@@ -92,8 +92,10 @@ class UserController extends BaseController
         }
         
         try {
-            // Trả về URL công khai từ S3
-            $url = Storage::disk('s3')->url("avatars/{$user->avatar}");
+            // Trả về URL công khai từ S3 với region (avatars không phải là models)
+            $bucket = config('filesystems.disks.s3.bucket');
+            $region = config('filesystems.disks.s3.region');
+            $url = "https://{$bucket}.s3.{$region}.amazonaws.com/avatars/{$user->avatar}";
             
             return $this->successResponse([
                 'avatar_url' => $url

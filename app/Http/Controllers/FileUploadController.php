@@ -152,8 +152,17 @@ class FileUploadController extends BaseController
                 return response()->json(['error' => 'Failed to upload to S3', 'message' => $e->getMessage()], 500);
             }
 
-            // Lấy URL của file từ S3
-            $fileUrl = Storage::disk('s3')->url($s3Path);
+            // Lấy URL của file từ S3 dựa vào loại thư mục
+            $bucket = config('filesystems.disks.s3.bucket');
+            $region = config('filesystems.disks.s3.region');
+            
+            // For model files, use URL without region
+            if ($s3Folder === 'models') {
+                $fileUrl = "https://{$bucket}.s3.amazonaws.com/{$s3Path}";
+            } else {
+                // For all other files, use URL with region
+                $fileUrl = "https://{$bucket}.s3.{$region}.amazonaws.com/{$s3Path}";
+            }
 
             // Cập nhật avatar trong DB nếu cần
             if (isset($options['updateUserAvatar']) && $options['updateUserAvatar']) {
