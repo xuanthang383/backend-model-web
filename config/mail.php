@@ -20,6 +20,16 @@ return [
             'transport' => 'mailersend',
             'api_key' => env('MAILERSEND_API_KEY'),
         ],
+        'smtp' => [
+            'transport' => 'smtp',
+            'host' => env('MAIL_HOST', 'smtp.zoho.com'),
+            'port' => env('MAIL_PORT', 587),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'auth_mode' => null,
+        ],
     ],
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS'),

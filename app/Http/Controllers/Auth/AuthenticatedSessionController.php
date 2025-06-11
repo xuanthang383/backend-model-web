@@ -36,7 +36,9 @@ class AuthenticatedSessionController extends Controller
             return response()->json([
                 'r' => 1,
                 'message' => 'Your email address has not been verified.',
-                'error_code' => 'EMAIL_NOT_VERIFIED'
+                'error_code' => 'EMAIL_NOT_VERIFIED',
+                'user_email' => $user->email, // Trả về email để client có thể sử dụng cho việc gửi lại email xác thực
+                'needs_verification' => true
             ], 403); // 403 Forbidden
         }
 

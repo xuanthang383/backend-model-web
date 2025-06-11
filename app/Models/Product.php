@@ -227,7 +227,8 @@ class Product extends Model
 
             // Nếu không phải là model link, thực hiện upload lên S3
             if (!$validatedData->is_model_link) {
-                dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models'));
+                $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+                dispatch(new UploadFileToS3($fileRecord->id, $validatedData->file_url, 'models', $extension));
             }
 
             ProductFiles::create([
@@ -247,7 +248,8 @@ class Product extends Model
                         'uploaded_by' => $uploadedBy
                     ]);
 
-                    dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+                    $imgExtension = pathinfo($imgName, PATHINFO_EXTENSION);
+                    dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images', $imgExtension));
 
                     ProductFiles::create([
                         'file_id' => $imageRecord->id,

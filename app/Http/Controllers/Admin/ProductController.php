@@ -126,7 +126,8 @@ class ProductController extends BaseController
                 ]);
 
                 // 🔥 Đẩy lên queue để upload lên S3
-                dispatch(new UploadFileToS3($fileRecord->id, $validateData->file_url, 'models'));
+                $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+                dispatch(new UploadFileToS3($fileRecord->id, $validateData->file_url, 'models', $extension));
 
                 // 🛑 Lưu file mới vào bảng product_files
                 ProductFiles::create([
@@ -169,7 +170,8 @@ class ProductController extends BaseController
                         ]);
 
                         // 🔥 Đẩy lên queue để upload lên S3
-                        dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images'));
+                        $imgExtension = pathinfo($imgName, PATHINFO_EXTENSION);
+                        dispatch(new UploadFileToS3($imageRecord->id, $imageUrl, 'images', $imgExtension));
 
                         // 🛑 Lưu file mới vào bảng product_files
                         $productFile = ProductFiles::create([
