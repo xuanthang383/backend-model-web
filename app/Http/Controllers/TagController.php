@@ -44,7 +44,7 @@ class TagController extends BaseController
             return $this->errorResponse($e->errors(), 422);
         } catch (\Exception $e) {
             // Trả về lỗi chung nếu có ngoại lệ khác
-            return $this->errorResponse('Something went wrong!', 500, $e->getMessage());
+            return $this->errorResponse('Something went wrong! ' . $e->getMessage(), 500, 500);
         }
     }
 
