@@ -38,24 +38,13 @@ class TagController extends BaseController
                 'name' => $request->name
             ]);
 
-            return $this->successResponse(
-                'Tag created successfully!',
-                $tag,
-                201
-            );
+            return $this->successResponse($tag, 'Tag created successfully!', 201);
         } catch (ValidationException $e) {
             // Trả về lỗi nếu validation không thành công
-            return $this->errorResponse(
-                $e->errors(),
-                422
-            );
+            return $this->errorResponse($e->errors(), 422);
         } catch (\Exception $e) {
             // Trả về lỗi chung nếu có ngoại lệ khác
-            return $this->errorResponse(
-                'Something went wrong!',
-                500,
-                $e->getMessage()
-            );
+            return $this->errorResponse('Something went wrong!', 500, $e->getMessage());
         }
     }
 
