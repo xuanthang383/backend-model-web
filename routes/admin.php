@@ -72,10 +72,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::controller(MaterialController::class)->prefix('/materials')->group(function () {
-        Route::post('/', 'store');
-        Route::get('/{id}', 'show');
-        Route::put('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
+        Route::get('/', 'index')->middleware('permission:materials.view');
+        Route::post('/', 'store')->middleware('permission:materials.add');
+        Route::get('/{id}', 'show')->middleware('permission:materials.view');
+        Route::put('/{id}', 'update')->middleware('permission:materials.edit');
+        Route::delete('/{id}', 'destroy')->middleware('permission:materials.delete');
     });
 
     Route::controller(CategoryController::class)->prefix('/categories')->group(function () {
