@@ -54,7 +54,16 @@ class MaterialController extends BaseController
      */
     public function show(string $id)
     {
-        //
+        try {
+            $material = Material::findOrFail($id);
+            return $this->successResponse($material, 'Material fetched successfully!');
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Material not found!',
+                404,
+                $e->getMessage()
+            );
+        }
     }
 
     /**
@@ -91,6 +100,16 @@ class MaterialController extends BaseController
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            $material = Material::findOrFail($id);
+            $material->delete();
+            return $this->successResponse(null, 'Material deleted successfully!');
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Something went wrong!',
+                500,
+                $e->getMessage()
+            );
+        }
     }
 }
