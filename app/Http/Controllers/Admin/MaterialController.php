@@ -33,19 +33,19 @@ class MaterialController extends BaseController
                 'name' => $request->name
             ]);
 
-            return response()->json([
-                'message' => 'Material created successfully!',
-                'material' => $material
-            ], 201);
+            return $this->successResponse(
+                $material,
+                'Material created successfully!',
+                201
+            );
         } catch (ValidationException $e) {
-            return response()->json([
-                'error' => $e->errors()
-            ], 422);
+            return $this->errorResponse($e->validator->errors());
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Something went wrong!',
-                'details' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse(
+                'Something went wrong!',
+                500,
+                $e->getMessage()
+            );
         }
     }
 
@@ -62,7 +62,28 @@ class MaterialController extends BaseController
      */
     public function update(Request $request, string $id)
     {
-        //
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255|unique:materials,name,' . $id,
+            ]);
+
+            $material = Material::findOrFail($id);
+            $material->name = $request->name;
+            $material->save();
+
+            return $this->successResponse(
+                $material,
+                'Material updated successfully!'
+            );
+        } catch (ValidationException $e) {
+            return $this->errorResponse($e->validator->errors());
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Something went wrong!',
+                500,
+                $e->getMessage()
+            );
+        }
     }
 
     /**
