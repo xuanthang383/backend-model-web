@@ -155,7 +155,7 @@ class FileUploadController extends BaseController
             // Lấy URL của file từ S3 dựa vào loại thư mục
             $bucket = config('filesystems.disks.s3.bucket');
             $region = config('filesystems.disks.s3.region');
-            
+
             // For model files, use URL without region
             if ($s3Folder === 'models') {
                 $fileUrl = "https://{$bucket}.s3.amazonaws.com/{$s3Path}";
@@ -498,11 +498,11 @@ class FileUploadController extends BaseController
             ]);
         }
 
-        return $this->uploadFile($request, 'avatars', 5120, 'Avatar uploaded successfully', [
+        return $this->uploadFile($request, 'avatars', 102400, 'Avatar uploaded successfully', [
             'fileField' => $fileField,
             'fileName' => "{$userId}.{$fileExtension}",
             'validateRules' => [
-                $fileField => 'required|image|max:5120' // Cho phép tất cả các định dạng hình ảnh, max 5MB
+                $fileField => 'required|image|max:102400' // Cho phép tất cả các định dạng hình ảnh, max 100MB
             ],
             'updateUserAvatar' => true
         ]);
