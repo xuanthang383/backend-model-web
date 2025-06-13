@@ -164,9 +164,6 @@ class FileUploadController extends BaseController
                 $fileUrl = "https://{$bucket}.s3.{$region}.amazonaws.com/{$s3Path}";
             }
 
-            // Add timestamp to prevent browser caching
-            $fileUrl .= '?v=' . time();
-
             // Cập nhật avatar trong DB nếu cần
             if (isset($options['updateUserAvatar']) && $options['updateUserAvatar']) {
                 $user = Auth::user();
@@ -473,15 +470,14 @@ class FileUploadController extends BaseController
                     'new_avatar' => $fileName
                 ]);
 
-                // Cập nhật avatar (lưu tên file, không phải URL đầy đủ)
-                // URL đầy đủ sẽ được tạo bởi accessor getAvatarUrlAttribute trong model User
-                $user->avatar = $fileName;
+                // Cập nhật avatar với timestamp để tránh cache
+                $user->avatar = $fileName . '?v=' . time();
                 $result = $user->save();
 
                 // Thử cập nhật bằng cách khác nếu không thành công
                 if (!$result) {
                     Log::warning('Failed to update avatar with save(), trying update()');
-                    $updateResult = User::where('id', $user->id)->update(['avatar' => $fileName]);
+                    $updateResult = User::where('id', $user->id)->update(['avatar' => $fileName . '?v=' . time()]);
                     Log::info('Update result with update()', ['result' => $updateResult]);
                 }
 
