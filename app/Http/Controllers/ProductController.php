@@ -185,7 +185,8 @@ class ProductController extends BaseController
     {
         $userId = (int)$this->getUserIdFromToken($request);
 
-        $product = Product::with(['category', 'tags', 'files', 'platform', 'render'])->find($id);
+        // Eager load 'user' relationship
+        $product = Product::with(['category', 'tags', 'files', 'platform', 'render', 'user'])->find($id);
         if (!$product) {
             return response()->json(['r' => 0, 'msg' => 'Product not found'], 404);
         }
@@ -239,6 +240,18 @@ class ProductController extends BaseController
 
         $thumbnailPath = $thumbnail ? File::find($thumbnail->file_id)->file_path : null;
 
+        // Add user info to response
+        $userInfo = null;
+        if ($product->user) {
+            $userInfo = [
+                'id' => $product->user->id,
+                'name' => $product->user->name,
+                'email' => $product->user->email,
+                'avatar' => $product->user->avatar,
+                // Add more fields if needed
+            ];
+        }
+
         return response()->json(['r' => 1,
             'msg' => 'Product retrieved successfully',
             'data' => [
@@ -261,7 +274,8 @@ class ProductController extends BaseController
                 'files' => $product->files,
                 'colors' => $product->colors ?? [],
                 'materials' => $product->materials ?? [],
-                'libraries' => $libraries
+                'libraries' => $libraries,
+                'user' => $userInfo // Thông tin user
             ]]);
     }
 
@@ -569,12 +583,12 @@ class ProductController extends BaseController
             // Extract the path part from the S3 URL based on URL format
             $bucket = config('filesystems.disks.s3.bucket');
             $region = config('filesystems.disks.s3.region');
-            
+
             // Check for URL with region
             $s3BaseUrlWithRegion = "https://{$bucket}.s3.{$region}.amazonaws.com/";
             // Check for URL without region (models)
             $s3BaseUrlNoRegion = "https://{$bucket}.s3.amazonaws.com/";
-            
+
             if (strpos($file->file_path, $s3BaseUrlWithRegion) === 0) {
                 // URL with region
                 $fileKeyS3 = substr($file->file_path, strlen($s3BaseUrlWithRegion));
@@ -585,7 +599,7 @@ class ProductController extends BaseController
                 // Fallback to the old method
                 $fileKeyS3 = str_replace(config("app.file_path"), '', $file->file_path);
             }
-            
+
             $signedUrl = Storage::disk('s3')->temporaryUrl($fileKeyS3, now()->addSeconds(20));
             if (!$signedUrl) {
                 return $this->errorResponse('Failed to generate download link.', 500);

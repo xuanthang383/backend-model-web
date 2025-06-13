@@ -501,11 +501,11 @@ class FileUploadController extends BaseController
             ]);
         }
 
-        return $this->uploadFile($request, 'avatars', 5120, 'Avatar uploaded successfully', [
+        return $this->uploadFile($request, 'avatars', 102400, 'Avatar uploaded successfully', [
             'fileField' => $fileField,
             'fileName' => "{$userId}.{$fileExtension}",
             'validateRules' => [
-                $fileField => 'required|image|max:5120' // Cho phép tất cả các định dạng hình ảnh, max 5MB
+                $fileField => 'required|image|max:102400' // Cho phép tất cả các định dạng hình ảnh, max 100MB
             ],
             'updateUserAvatar' => true
         ]);
