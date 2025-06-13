@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\File;
 use App\Models\ProductFiles;
 use App\Models\User;
+use DB;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Jobs\UploadFileToS3;
+use Throwable;
 
 class FileUploadController extends BaseController
 {
@@ -42,11 +45,11 @@ class FileUploadController extends BaseController
                     'filename' => $file->getClientOriginalName(),
                     'folder' => $folder
                 ]);
-                throw new \Exception("Không thể lưu file.");
+                throw new Exception("Không thể lưu file.");
             }
 
             return asset('storage/' . $filePath); // Trả về đường dẫn truy cập
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Lỗi khi lưu file: " . $e->getMessage(), [
                 'filename' => $file->getClientOriginalName(),
                 'folder' => $folder
@@ -142,7 +145,7 @@ class FileUploadController extends BaseController
                     ]);
                     return response()->json(['error' => 'Failed to upload to S3'], 500);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error("Exception khi upload lên S3: " . $e->getMessage(), [
                     'filename' => $fileName,
                     'folder' => $s3Folder,
@@ -234,7 +237,7 @@ class FileUploadController extends BaseController
                 'folder' => $folder
             ]);
             return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Lỗi không xác định khi upload: " . $e->getMessage(), [
                 'folder' => $folder,
                 'error' => $e->getMessage(),
@@ -291,7 +294,7 @@ class FileUploadController extends BaseController
                 'fileField' => $fileField,
                 'extension' => $file->getClientOriginalExtension()
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error in prepareFileFromRequest: ' . $e->getMessage(), [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -335,7 +338,7 @@ class FileUploadController extends BaseController
                 'file_url' => $fileUrl,
                 'file_name' => $fileName
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -372,7 +375,7 @@ class FileUploadController extends BaseController
                 'file_url' => $fileUrl,
                 'file_name' => $fileName
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => 'File upload failed', 'message' => $e->getMessage()], 500);
         }
     }
@@ -419,14 +422,7 @@ class FileUploadController extends BaseController
             'all_files' => $request->allFiles(),
             'has_file' => $request->hasFile('file'),
             'has_avatar' => $request->hasFile('avatar'),
-            'content_type' => $request->header('Content-Type'),
-            'request_method' => $request->method(),
-            'request_path' => $request->path(),
-            'request_all' => $request->all(),
-            'auth_id' => $userId,
-            'auth_user' => Auth::user() ? Auth::user()->id : null,
-            'auth_check' => Auth::check(),
-            'bearer_token' => $request->bearerToken()
+            'auth_id' => $userId
         ]);
 
         // Kiểm tra xem có file nào được upload không
@@ -439,71 +435,114 @@ class FileUploadController extends BaseController
         $fileField = $request->hasFile('avatar') ? 'avatar' : 'file';
         $file = $request->file($fileField);
 
-        // Xác định extension
-        $fileExtension = $file->getClientOriginalExtension() ?: 'jpg';
-
-        Log::info('Avatar file information', [
-            'field' => $fileField,
-            'file_name' => $file->getClientOriginalName(),
-            'file_size' => $file->getSize(),
-            'file_mime' => $file->getMimeType(),
-            'file_extension' => $fileExtension,
-            'file_path' => $file->getPathname()
+        // Validate file
+        $validator = \Validator::make($request->all(), [
+            $fileField => 'required|image|max:102400'
         ]);
 
-        // Thử cập nhật avatar trực tiếp
-        try {
-            // Lấy user từ Auth::user() hoặc từ database
-            $user = Auth::user();
-            if (!$user && $userId) {
-                $user = User::find($userId);
-            }
-
-            if ($user) {
-                // Tạo tên file
-                $fileName = "{$userId}.{$fileExtension}";
-
-                // Log thông tin trước khi cập nhật
-                Log::info('Updating user avatar directly', [
-                    'user_id' => $user->id,
-                    'old_avatar' => $user->avatar,
-                    'new_avatar' => $fileName
-                ]);
-
-                // Cập nhật avatar với timestamp để tránh cache
-                $user->avatar = $fileName . '?v=' . time();
-                $result = $user->save();
-
-                // Thử cập nhật bằng cách khác nếu không thành công
-                if (!$result) {
-                    Log::warning('Failed to update avatar with save(), trying update()');
-                    $updateResult = User::where('id', $user->id)->update(['avatar' => $fileName . '?v=' . time()]);
-                    Log::info('Update result with update()', ['result' => $updateResult]);
-                }
-
-                // Log kết quả
-                Log::info('Direct update result', [
-                    'user_id' => $user->id,
-                    'result' => $result,
-                    'new_avatar' => $user->avatar
-                ]);
-            } else {
-                Log::error('User not found for direct update');
-            }
-        } catch (\Exception $e) {
-            Log::error('Error updating avatar directly: ' . $e->getMessage(), [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'message' => $validator->errors()], 400);
         }
 
-        return $this->uploadFile($request, 'avatars', 102400, 'Avatar uploaded successfully', [
-            'fileField' => $fileField,
-            'fileName' => "{$userId}.{$fileExtension}",
-            'validateRules' => [
-                $fileField => 'required|image|max:102400' // Cho phép tất cả các định dạng hình ảnh, max 100MB
-            ],
-            'updateUserAvatar' => true
-        ]);
+        // Xác định extension
+        $fileExtension = $file->getClientOriginalExtension() ?: 'jpg';
+        $fileName = "$userId.$fileExtension";
+
+        try {
+            // Bắt đầu transaction
+            DB::beginTransaction();
+
+            // Lấy user từ Auth hoặc từ database
+            $user = Auth::user() ?: User::find($userId);
+            if (!$user) {
+                DB::rollBack();
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Cập nhật avatar trong DB với timestamp
+            $timestamp = time();
+            $avatarName = $fileName . '?v=' . $timestamp;
+
+            $user->avatar = $avatarName;
+            if (!$user->save()) {
+                DB::rollBack();
+                return response()->json(['error' => 'Failed to update user avatar'], 500);
+            }
+
+            // Sau khi DB OK, upload lên S3 sử dụng hàm uploadFile
+            try {
+                $result = $this->uploadFile($request, 'avatars', 102400, 'Avatar uploaded successfully', [
+                    'fileField' => $fileField,
+                    'fileName' => $fileName,
+                    'validateRules' => [
+                        $fileField => 'required|image|max:102400'
+                    ],
+                    'updateUserAvatar' => false // Tắt cập nhật DB vì đã làm ở trên
+                ]);
+
+                $response = json_decode($result->getContent(), true);
+
+                // Kiểm tra kết quả upload
+                if (isset($response['error'])) {
+                    throw new Exception($response['message'] ?? 'Failed to upload to S3');
+                }
+
+                // Commit transaction nếu mọi thứ OK
+                DB::commit();
+
+                // Trả về response với timestamp mới
+                return response()->json([
+                    'message' => 'Avatar uploaded successfully',
+                    'file_url' => $response['file_url'] . '?v=' . $timestamp,
+                    'file_name' => $fileName,
+                    'avatar' => $avatarName
+                ]);
+
+            } catch (Exception $e) {
+                // Nếu upload S3 lỗi, rollback DB
+                DB::rollBack();
+
+                Log::error("S3 upload error: " . $e->getMessage(), [
+                    'user_id' => $userId,
+                    'file_name' => $fileName,
+                    'error' => $e->getMessage()
+                ]);
+
+                return response()->json([
+                    'error' => 'Failed to upload avatar to S3',
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+
+        } catch (Exception | Throwable $e) {
+            // Lỗi tổng thể
+            Log::error("Avatar upload error: " . $e->getMessage(), [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            try {
+                // Kiểm tra và rollback transaction an toàn
+                if (DB::transactionLevel() > 0) {
+                    DB::rollBack();
+                    Log::info("Transaction rolled back successfully", [
+                        'user_id' => $userId
+                    ]);
+                }
+            } catch (Exception | Throwable $rollbackError) {
+                Log::error("Failed to rollback transaction: " . $rollbackError->getMessage(), [
+                    'user_id' => $userId,
+                    'original_error' => $e->getMessage(),
+                    'rollback_error' => $rollbackError->getMessage(),
+                    'trace' => $rollbackError->getTraceAsString()
+                ]);
+            }
+
+            return response()->json([
+                'error' => 'Avatar upload failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
