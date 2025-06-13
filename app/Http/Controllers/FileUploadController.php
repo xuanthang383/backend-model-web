@@ -155,7 +155,7 @@ class FileUploadController extends BaseController
             // Lấy URL của file từ S3 dựa vào loại thư mục
             $bucket = config('filesystems.disks.s3.bucket');
             $region = config('filesystems.disks.s3.region');
-            
+
             // For model files, use URL without region
             if ($s3Folder === 'models') {
                 $fileUrl = "https://{$bucket}.s3.amazonaws.com/{$s3Path}";
@@ -163,6 +163,9 @@ class FileUploadController extends BaseController
                 // For all other files, use URL with region
                 $fileUrl = "https://{$bucket}.s3.{$region}.amazonaws.com/{$s3Path}";
             }
+
+            // Add timestamp to prevent browser caching
+            $fileUrl .= '?v=' . time();
 
             // Cập nhật avatar trong DB nếu cần
             if (isset($options['updateUserAvatar']) && $options['updateUserAvatar']) {
