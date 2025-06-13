@@ -1,19 +1,18 @@
 <?php
 
+use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductErrorReportController;
-use App\Http\Controllers\Admin\ProductNameChangeRequestController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\ErrorReasonController;
 use App\Http\Controllers\FileUploadController;
-use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\RenderController;
-use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -63,12 +62,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('{id}/change-status', 'changeStatus')->middleware('permission:models.change_status');
     });
 
-    Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
-        Route::get('/', 'index');
-    });
+//    Route::controller(ProductNameChangeRequestController::class)->prefix('/name-change-requests')->group(function () {
+//        Route::get('/', 'index');
+//    });
 
     Route::controller(TagController::class)->prefix('/tags')->group(function () {
         Route::get('/', 'index');
+        Route::post('/', 'store');
+    });
+
+    Route::controller(MaterialController::class)->prefix('/materials')->group(function () {
+        Route::get('/', 'index')->middleware('permission:materials.view');
+        Route::post('/', 'store')->middleware('permission:materials.add');
+        Route::get('/{id}', 'show')->middleware('permission:materials.view');
+        Route::put('/{id}', 'update')->middleware('permission:materials.edit');
+        Route::delete('/{id}', 'destroy')->middleware('permission:materials.delete');
     });
 
     Route::controller(CategoryController::class)->prefix('/categories')->group(function () {

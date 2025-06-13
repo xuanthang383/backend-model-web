@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\BaseController;
 use App\Models\Tag;
 use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
@@ -38,13 +39,19 @@ class TagController extends BaseController
                 'name' => $request->name
             ]);
 
-            return $this->successResponse($tag, 'Tag created successfully!', 201);
+            return response()->json([
+                'message' => 'Tag created successfully!',
+                'tag' => $tag
+            ], 201);
         } catch (ValidationException $e) {
-            // Trả về lỗi nếu validation không thành công
-            return $this->errorResponse($e->errors(), 422);
+            return response()->json([
+                'error' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            // Trả về lỗi chung nếu có ngoại lệ khác
-            return $this->errorResponse('Something went wrong! ' . $e->getMessage(), 500, 500);
+            return response()->json([
+                'error' => 'Something went wrong!',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
