@@ -28,6 +28,8 @@ use Throwable;
  * @property int $user_id
  * @property bool $public
  * @property string $status
+ * @property int $downloads
+ * @property string|null $description
  * @property-read Category $category
  * @property-read Platform|null $platform
  * @property-read Render|null $render
@@ -69,7 +71,8 @@ class Product extends Model
         'material_id',
         'public',
         'status',
-        'downloads'
+        'downloads',
+        'description'
     ];
 
     protected $casts = [
@@ -197,7 +200,8 @@ class Product extends Model
                 'render_id' => $validatedData->render_id,
                 'status' => Product::STATUS_DRAFT,
                 'user_id' => $uploadedBy,
-                'public' => true
+                'public' => true,
+                'description' => $validatedData->description
             ]);
 
             // 🛑 Lưu Colors vào bảng `product_colors`

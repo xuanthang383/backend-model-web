@@ -45,6 +45,7 @@ class StoreProductRequest extends FormRequest
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id',
             'is_model_link' => 'required|boolean',
+            'description' => 'string|nullable',
         ];
     }
 
