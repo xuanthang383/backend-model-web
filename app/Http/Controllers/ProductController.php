@@ -55,10 +55,21 @@ class ProductController extends BaseController
         //Chỉ lấy ra các bản ghi publish
         $query->where('status', '=', Product::STATUS_APPROVED);
 
-        // Lọc theo tên sản phẩm (nếu có)
-        if ($request->has('name')) {
+        // Lọc theo search key (nếu có)
+        if ($request->has('s')) {
+            $searchKey = $request->query('s');
+            $query->where(function($q) use ($searchKey) {
+                $q->where('name', 'LIKE', '%' . $searchKey . '%')
+                  ->orWhereHas('tags', function($tagQuery) use ($searchKey) {
+                      $tagQuery->where('name', $searchKey); // Search chính xác cho tag name
+                  });
+            });
+        }
+        // Lọc theo tên sản phẩm (nếu có - giữ lại để tương thích ngược)
+        else if ($request->has('name')) {
             $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
         }
+
         // Lọc theo category_id (nếu có)
         if ($request->has('category_ids')) {
             $categoryIds = $request->query('category_ids') ?? []; // Ensure it's an array
