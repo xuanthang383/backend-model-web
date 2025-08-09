@@ -70,6 +70,7 @@ Route::controller(EmailVerificationController::class)->group(function () {
 
 Route::controller(ProductController::class)->prefix('/products')->group(function () {
     Route::get('/', 'index');
+    Route::get('/{id}/similar', 'similar');
     Route::get('/{id}', 'show');
 });
 

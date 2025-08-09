@@ -60,9 +60,9 @@ class ProductController extends BaseController
             $searchKey = $request->query('s');
             $query->where(function($q) use ($searchKey) {
                 $q->where('name', 'LIKE', '%' . $searchKey . '%')
-                  ->orWhereHas('tags', function($tagQuery) use ($searchKey) {
-                      $tagQuery->where('name', $searchKey); // Search chính xác cho tag name
-                  });
+                    ->orWhereHas('tags', function($tagQuery) use ($searchKey) {
+                        $tagQuery->where('name', $searchKey); // Search chính xác cho tag name
+                    });
             });
         }
         // Lọc theo tên sản phẩm (nếu có - giữ lại để tương thích ngược)
@@ -159,6 +159,74 @@ class ProductController extends BaseController
             unset($product->favorites);
 
             $product->thumbnail = $thumbnailPath;
+
+            return $product;
+        });
+    }
+    public function similar(Request $request, $id)
+    {
+        $userId = (int)$this->getUserIdFromToken($request);
+
+        // Lấy thông tin sản phẩm gốc
+        $originalProduct = Product::with('materials')->findOrFail($id);
+
+        // Lấy danh sách material_ids của sản phẩm gốc
+        $originalMaterialIds = $originalProduct->materials->pluck('id')->toArray();
+
+        $query = Product::query()
+            ->with(['thumbnail', 'materials', 'libraries' => function ($query) use ($userId) {
+                $query->where('libraries.user_id', $userId);
+            }])
+            ->where('id', '!=', $id)
+            ->where('status', '=', Product::STATUS_APPROVED)
+            ->where('category_id', $originalProduct->category_id);
+
+        // Thêm eager loading cho favorites nếu user đã đăng nhập
+        if ($userId) {
+            $query->with(['favorites' => function ($query) use ($userId) {
+                $query->where('user_id', $userId)->limit(1);
+            }]);
+        }
+
+        // Đếm số lượng materials trùng khớp
+        $query->withCount(['materials' => function ($query) use ($originalMaterialIds) {
+            $query->whereIn('materials.id', $originalMaterialIds);
+        }]);
+
+        $query->orderByDesc('materials_count')
+            ->orderByDesc('downloads')
+            ->orderBy('created_at');
+
+        return $this->paginateResponse($query, $request, "Success", function ($product) use ($userId) {
+            // Get thumbnail file path from the eager loaded thumbnail relationship
+            $thumbnailFile = $product->thumbnail->first();
+
+            // Use the eager loaded favorites relationship
+            if ($userId) {
+                $product->is_favorite = (bool)$product->favorites->first();
+                // Keep the favorite object for backward compatibility
+                $product->favorite = $product->favorites->first();
+            } else {
+                $product->is_favorite = false;
+                $product->favorite = null;
+            }
+
+            // Replace the thumbnail relationship with just the file path
+            $thumbnailPath = $thumbnailFile ? $thumbnailFile->file_path : null;
+
+            // Get libraries
+            $libraries = $product->libraries ? $product->libraries->toArray() : [];
+
+            // Lấy danh sách material_ids để debug
+            $materialIds = $product->materials->pluck('id')->toArray();
+
+            unset($product->thumbnail);
+            unset($product->favorites);
+            unset($product->materials);
+
+            $product->thumbnail = $thumbnailPath;
+            $product->libraries = $libraries;
+            $product->material_ids = $materialIds; // Thêm material_ids để debug
 
             return $product;
         });
