@@ -28,6 +28,36 @@ class ProductController extends BaseController
             ->with("user")
             ->orderBy("products.created_at", "desc");
 
+        // Filter by name
+        if ($request->has('name') && $request->name !== '') {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        // Filter by category_id
+        if ($request->has('category_id') && $request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Filter by platform_id
+        if ($request->has('platform_id') && $request->platform_id) {
+            $query->where('platform_id', $request->platform_id);
+        }
+
+        // Filter by render_id
+        if ($request->has('render_id') && $request->render_id) {
+            $query->where('render_id', $request->render_id);
+        }
+
+        // Filter by status
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by public
+        if ($request->has('public')) {
+            $query->where('public', $request->public);
+        }
+
         return $this->paginateResponse($query, $request, "Success", function ($product) {
             return $product;
         });
