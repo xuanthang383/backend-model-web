@@ -58,14 +58,13 @@ class ProductController extends BaseController
         // Lọc theo search key (nếu có)
         if ($request->has('s')) {
             $searchKey = $request->query('s');
-            $query->where(function($q) use ($searchKey) {
+            $query->where(function ($q) use ($searchKey) {
                 $q->where('name', 'LIKE', '%' . $searchKey . '%')
-                    ->orWhereHas('tags', function($tagQuery) use ($searchKey) {
+                    ->orWhereHas('tags', function ($tagQuery) use ($searchKey) {
                         $tagQuery->where('name', $searchKey); // Search chính xác cho tag name
                     });
             });
-        }
-        // Lọc theo tên sản phẩm (nếu có - giữ lại để tương thích ngược)
+        } // Lọc theo tên sản phẩm (nếu có - giữ lại để tương thích ngược)
         else if ($request->has('name')) {
             $query->where('name', 'LIKE', '%' . $request->query('name') . '%');
         }
@@ -163,6 +162,7 @@ class ProductController extends BaseController
             return $product;
         });
     }
+
     public function similar(Request $request, $id)
     {
         $userId = (int)$this->getUserIdFromToken($request);
@@ -260,15 +260,16 @@ class ProductController extends BaseController
         // Trong production, không nên gọi dd(DB::getQueryLog())
     }
 
-    public function show(Request $request, $id)
+    public function show(Request $request, $slug)
     {
         $userId = (int)$this->getUserIdFromToken($request);
 
         // Eager load 'user' relationship
-        $product = Product::with(['category', 'tags', 'files', 'platform', 'render', 'user'])->find($id);
+        $product = Product::with(['category', 'tags', 'files', 'platform', 'render', 'user'])->where('slug', $slug)->first();
         if (!$product) {
             return response()->json(['r' => 0, 'msg' => 'Product not found'], 404);
         }
+        $id = $product->id;
 
         // Nếu user đăng nhập, kiểm tra sản phẩm có trong danh sách yêu thích không và lấy thông tin favorite
         $favorite = null;

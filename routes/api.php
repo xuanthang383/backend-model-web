@@ -70,7 +70,11 @@ Route::controller(EmailVerificationController::class)->group(function () {
 Route::controller(ProductController::class)->prefix('/products')->group(function () {
     Route::get('/', 'index');
     Route::get('/{id}/similar', 'similar');
-    Route::get('/{id}', 'show');
+    Route::get('/{slug}', 'show');
+});
+
+Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {
+    Route::get('/', 'index');
 });
 
 // ✅ API cần bảo vệ (Yêu cầu đăng nhập)
@@ -178,9 +182,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/model-file-url/{product_id}', 'getModelFileUrl');
         Route::post('/upload-avatar', 'uploadAvatar');
         Route::post('/upload-file-s3', 'uploadFileToS3');
-    });
-
-    Route::controller(ErrorReasonController::class)->prefix('/error-reasons')->group(function () {
-        Route::get('/', 'index');
     });
 });

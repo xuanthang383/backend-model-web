@@ -16,12 +16,14 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HigherOrderCollectionProxy;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
  * @mixin  Builder
  * @property int $id
  * @property string $name
+ * @property string $slug
  * @property int $category_id
  * @property int|null $platform_id
  * @property int|null $render_id
@@ -64,6 +66,7 @@ class Product extends Model
      */
     protected $fillable = [
         'name',
+        'slug',
         'user_id',
         'category_id',
         'platform_id',
@@ -92,6 +95,45 @@ class Product extends Model
         self::STATUS_APPROVED,
         self::STATUS_REJECT
     ];
+
+    protected static function booted(): void
+    {
+        // Tự sinh slug mỗi lần lưu (create/update)
+        static::creating(function (Product $product) {
+            // Nếu đã có slug do user nhập -> giữ nguyên nhưng vẫn chuẩn hoá
+            $base = $product->slug
+                ? Str::slug($product->slug)      // chuẩn hoá input
+                : Str::slug($product->name); // sinh từ name
+
+            // Fallback khi name rỗng
+            if ($base === '') {
+                $base = 'model';
+            }
+
+            $product->slug = static::uniqueSlug($base, $product->id);
+        });
+    }
+
+    /**
+     * Tạo slug duy nhất (thêm -2, -3... nếu trùng).
+     */
+    protected static function uniqueSlug(string $base, ?int $ignoreId = null): string
+    {
+        $slug = $base;
+        $i = 2;
+
+        while (
+        static::query()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()
+        ) {
+            $slug = "{$base}-{$i}";
+            $i++;
+        }
+
+        return $slug;
+    }
 
     public function user(): BelongsTo
     {
