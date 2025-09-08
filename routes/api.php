@@ -17,7 +17,6 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductErrorReportController;
-use App\Http\Controllers\ProductNameChangeRequestController;
 use App\Http\Controllers\RenderController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;

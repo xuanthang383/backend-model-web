@@ -189,4 +189,6 @@ return [
     ])->toArray(),
 
     'file_path' => env("URL_IMAGE", ''),
+
+    'admin_email' => env("ADMIN_EMAIL", '')
 ];

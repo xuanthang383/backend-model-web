@@ -1,18 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\AppConfigController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductCrawlController;
 use App\Http\Controllers\Admin\ProductErrorReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\ErrorReasonController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\RenderController;
+use App\Http\Controllers\SyncProductCrawlController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -120,5 +123,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', 'destroy')->middleware('permission:roles.delete');
         Route::get('/permissions/all', 'getAllPermissions')->middleware('permission:roles.view');
         Route::put('/{id}/permissions', 'updatePermissions')->middleware('permission:roles.edit_permissions');
+    });
+
+    Route::controller(ProductCrawlController::class)->prefix('/product-crawl')->group(function () {
+        Route::get('/', 'index');
+        Route::get('/get-distinct-category', 'getDistinctCategory');
+    });
+
+    Route::controller(AppConfigController::class)->prefix('/app-configs')->group(function () {
+        Route::get('/', 'getConfig');
+        Route::put('/{id}', 'update');
+    });
+
+    Route::controller(SyncProductCrawlController::class)->prefix('/product-crawl')->group(function () {
+        Route::post('/sync', 'sync');
     });
 });

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @mixin Builder
  * @property int $id
+ * @property string $app_config
  * @property string $url
  * @property string|null $title
  * @property string|null $images
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $tags
  * @property bool $is_sync
  * @property Carbon $created_at
+ * @property string|null $note
  *
  */
 class ProductCrawl extends Model
@@ -32,6 +34,7 @@ class ProductCrawl extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'app_config',
         'url',
         'title',
         'images',
@@ -44,6 +47,7 @@ class ProductCrawl extends Model
         'tags',
         'is_sync',
         'created_at',
+        'note',
     ];
 
     protected $casts = [

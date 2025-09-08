@@ -30,6 +30,7 @@ use Throwable;
  * @property string $status
  * @property int $downloads
  * @property string|null $description
+ * @property boolean $is_crawl
  * @property-read Category $category
  * @property-read Platform|null $platform
  * @property-read Render|null $render
@@ -72,11 +73,13 @@ class Product extends Model
         'public',
         'status',
         'downloads',
-        'description'
+        'description',
+        'is_crawl'
     ];
 
     protected $casts = [
-        'status' => 'string'
+        'status' => 'string',
+        'is_crawl' => 'boolean'
     ];
 
     public const STATUS_DRAFT = "DRAFT";
